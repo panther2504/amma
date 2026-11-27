@@ -1,0 +1,9 @@
+{
+  "name": "Amma – Pregnancy Companion",
+  "short_name": "Amma",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FBF6F2",
+  "theme_color": "#C2497A",
+  "icons": [{ "src": "/amma.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}

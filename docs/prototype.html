@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="theme-color" content="#FBF6F2">
+<title>Amma – Pregnancy Companion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Sans+Tamil:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FBF6F2; --surface:#FFFFFF; --ink:#2B1A26; --ink2:#5C4A57; --muted:#9A8893; --line:#F1E6E9;
+  --primary:#C2497A; --primary2:#E37B9C; --deep:#5E1F47;
+  --blush:#FCE7EE; --peach:#FCE3D6; --lav:#EEE8FC; --lav-ink:#6A55B8;
+  --sage:#E2F2EA; --sage-ink:#2E7A5A; --amber:#FDF0DA; --amber-ink:#A6670F;
+  --red:#FDE8E8; --red-ink:#C93A3D; --sky:#E5F1FB; --sky-ink:#2C6C9D;
+  --r:22px; --shadow:0 12px 32px -14px rgba(94,31,71,.22); --shadow-sm:0 4px 14px -6px rgba(94,31,71,.18);
+  --ease:cubic-bezier(.2,.8,.2,1); --spring:cubic-bezier(.34,1.45,.5,1);
+  --display:'Fraunces',Georgia,serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0}
+body{font-family:'Plus Jakarta Sans','Noto Sans Tamil',system-ui,-apple-system,sans-serif;color:var(--ink);
+  background:radial-gradient(1100px 600px at 8% -10%,#FBDDE8 0%,transparent 60%),radial-gradient(900px 600px at 108% 110%,#E9E1FB 0%,transparent 55%),#F5EDEF;
+  display:grid;place-items:center;overflow:hidden;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;padding:0}
+input,select,textarea{font:inherit;color:inherit}
+h1,h2,h3,h4,p{margin:0}
+.lang-ta body, .ta{font-family:'Noto Sans Tamil','Plus Jakarta Sans',sans-serif}
+
+/* ---------- Device frame ---------- */
+.device{position:relative;width:393px;height:852px;border-radius:58px;background:#1c1418;padding:11px;flex:none;
+  box-shadow:0 0 0 2px #3b2c35,0 50px 90px -24px rgba(94,31,71,.5),inset 0 0 0 2px #000;transform-origin:center}
+.island{position:absolute;top:22px;left:50%;transform:translateX(-50%);width:120px;height:35px;background:#000;border-radius:20px;z-index:300}
+.screen{position:relative;width:100%;height:100%;border-radius:47px;overflow:hidden;background:var(--bg);--sb:54px;isolation:isolate}
+.statusbar{position:absolute;inset:0 0 auto 0;height:var(--sb);display:flex;align-items:center;justify-content:space-between;
+  padding:4px 30px 0 42px;font-weight:700;font-size:15px;z-index:250;pointer-events:none;color:var(--ink);transition:color .4s}
+.statusbar.light{color:#fff}
+.sb-icons{display:flex;gap:6px;align-items:center}
+@media (max-width:520px){
+  body{background:var(--bg);display:block}
+  .device{width:100%;height:100dvh;border-radius:0;padding:0;box-shadow:none;background:var(--bg);transform:none!important}
+  .island,.statusbar{display:none}
+  .screen{border-radius:0;--sb:max(env(safe-area-inset-top),12px)}
+}
+
+/* ---------- Layers ---------- */
+.layer{position:absolute;inset:0;transition:opacity .6s var(--ease),transform .6s var(--ease)}
+.layer.hidden{opacity:0;pointer-events:none;transform:scale(1.03)}
+.scroll{overflow-y:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.scroll::-webkit-scrollbar{display:none}
+
+/* ---------- Splash ---------- */
+#splash{background:linear-gradient(160deg,#4E1A3C 0%,#A63A67 55%,#E3879C 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;overflow:hidden}
+.splash-logo{position:relative;width:118px;height:118px;display:grid;place-items:center;animation:logoIn 1s var(--spring) both}
+.splash-logo .pulse{position:absolute;inset:0;border-radius:50%;border:1.5px solid rgba(255,255,255,.5);animation:pulse 2.2s var(--ease) infinite}
+.splash-logo .pulse:nth-child(2){animation-delay:.7s}
+.logo-core{width:96px;height:96px;border-radius:32px;background:rgba(255,255,255,.16);backdrop-filter:blur(10px);display:grid;place-items:center;box-shadow:inset 0 0 0 1px rgba(255,255,255,.3)}
+.splash-title{font-family:var(--display);font-size:56px;font-weight:600;letter-spacing:-1px;margin-top:22px;animation:fadeUp .9s .25s var(--ease) both}
+.splash-tag{opacity:.85;font-size:14px;letter-spacing:.4px;margin-top:6px;animation:fadeUp .9s .4s var(--ease) both}
+.splash-ta{font-family:'Noto Sans Tamil';opacity:.7;font-size:13px;margin-top:4px;animation:fadeUp .9s .5s var(--ease) both}
+.loader{position:absolute;bottom:70px;display:flex;gap:7px}
+.loader i{width:7px;height:7px;border-radius:50%;background:#fff;opacity:.4;animation:dot 1.2s infinite}
+.loader i:nth-child(2){animation-delay:.15s}.loader i:nth-child(3){animation-delay:.3s}
+.bubble-bg{position:absolute;border-radius:50%;background:rgba(255,255,255,.08);animation:float 9s ease-in-out infinite}
+
+/* ---------- Onboarding ---------- */
+#onboard{display:flex;flex-direction:column;padding:calc(var(--sb) + 8px) 0 34px;background:linear-gradient(180deg,#FFF 0%,var(--bg) 100%)}
+.ob-skip{align-self:flex-end;margin-right:24px;font-weight:600;color:var(--muted);font-size:14px;padding:8px 4px}
+.ob-track{flex:1;display:flex;transition:transform .7s var(--ease)}
+.ob-slide{min-width:100%;padding:10px 32px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.ob-art{position:relative;width:260px;height:260px;margin-bottom:34px}
+.ob-blob{position:absolute;inset:16px;border-radius:44% 56% 52% 48%/48% 44% 56% 52%;animation:morph 8s ease-in-out infinite}
+.ob-main{position:absolute;inset:0;display:grid;place-items:center;font-size:108px;animation:bob 4s ease-in-out infinite;filter:drop-shadow(0 18px 20px rgba(94,31,71,.2))}
+.ob-mini{position:absolute;width:56px;height:56px;border-radius:18px;background:#fff;box-shadow:var(--shadow);display:grid;place-items:center;font-size:28px;animation:bob 5s ease-in-out infinite}
+.ob-slide h2{font-family:var(--display);font-size:30px;line-height:1.15;font-weight:600;letter-spacing:-.4px}
+.ob-slide p{color:var(--ink2);margin-top:12px;line-height:1.6;font-size:15px}
+.ob-foot{display:flex;align-items:center;justify-content:space-between;padding:0 28px}
+.dots{display:flex;gap:6px}
+.dots i{height:8px;width:8px;border-radius:8px;background:#E7D6DC;transition:all .5s var(--ease)}
+.dots i.on{width:26px;background:var(--primary)}
+
+/* ---------- Buttons / fields ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:54px;padding:0 26px;border-radius:18px;font-weight:700;font-size:15px;
+  background:linear-gradient(135deg,var(--primary) 0%,#A43A69 100%);color:#fff;box-shadow:0 12px 24px -10px rgba(194,73,122,.7);transition:transform .2s var(--ease),box-shadow .2s}
+.btn:active{transform:scale(.96)}
+.btn.block{width:100%}
+.btn.ghost{background:var(--blush);color:var(--primary);box-shadow:none}
+.btn.soft{background:#fff;color:var(--ink);box-shadow:var(--shadow-sm)}
+.btn.danger{background:linear-gradient(135deg,#E24B4E,#B92F35);box-shadow:0 12px 24px -10px rgba(201,58,61,.7)}
+.btn.sm{height:40px;padding:0 16px;border-radius:13px;font-size:13px}
+.label{font-size:13px;font-weight:600;color:var(--ink2);margin:18px 2px 8px;display:block}
+.field{width:100%;background:#fff;border:1.5px solid var(--line);border-radius:16px;padding:14px 16px;outline:none;transition:border .2s,box-shadow .2s;font-size:15px}
+.field:focus{border-color:var(--primary);box-shadow:0 0 0 4px rgba(194,73,122,.12)}
+.choice{display:flex;gap:8px;flex-wrap:wrap}
+.choice button{flex:1;min-width:90px;padding:12px 10px;border-radius:14px;background:#fff;border:1.5px solid var(--line);font-weight:600;font-size:14px;transition:all .25s var(--ease)}
+.choice button.on{border-color:var(--primary);background:var(--blush);color:var(--primary)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* ---------- Setup ---------- */
+#setup{padding:calc(var(--sb) + 10px) 24px 30px;display:flex;flex-direction:column}
+#setup .scroll{flex:1;margin:0 -24px;padding:0 24px 20px}
+.setup-head h2{font-family:var(--display);font-size:30px;font-weight:600;margin-top:16px;letter-spacing:-.4px}
+.setup-head p{color:var(--ink2);margin-top:6px;font-size:14px}
+.edd-preview{margin-top:18px;border-radius:18px;padding:16px;background:linear-gradient(135deg,var(--blush),var(--lav));display:flex;align-items:center;gap:14px;animation:fadeUp .5s var(--ease)}
+.edd-preview .big{font-size:34px}
+.edd-preview b{font-size:17px;display:block}
+.edd-preview small{color:var(--ink2)}
+
+/* ---------- App shell ---------- */
+.view{position:absolute;inset:0;padding:calc(var(--sb) + 6px) 20px 120px}
+.view.swap{animation:viewIn .5s var(--ease)}
+.top{display:flex;align-items:center;justify-content:space-between;padding:6px 0 18px}
+.hello{display:flex;align-items:center;gap:12px}
+.avatar{width:46px;height:46px;border-radius:16px;display:grid;place-items:center;font-weight:800;color:#fff;font-size:18px;background:linear-gradient(135deg,var(--primary2),var(--deep));box-shadow:var(--shadow-sm)}
+.hello small{color:var(--muted);font-size:13px;font-weight:500}
+.hello h1,.top h1{font-size:21px;font-weight:800;letter-spacing:-.3px}
+.top small{color:var(--muted);font-size:13px;font-weight:500}
+.top-actions{display:flex;gap:8px}
+.icon-btn{position:relative;width:44px;height:44px;border-radius:15px;background:#fff;display:grid;place-items:center;box-shadow:var(--shadow-sm);color:var(--ink);font-weight:800;font-size:15px;transition:transform .2s var(--ease)}
+.icon-btn:active{transform:scale(.9)}
+.icon-btn .dot{position:absolute;top:10px;right:11px;width:8px;height:8px;border-radius:50%;background:var(--primary);box-shadow:0 0 0 2px #fff;animation:beat 2s infinite}
+.icon-btn.sos{background:linear-gradient(135deg,#EF5A5D,#C3343A);color:#fff;font-size:12px;letter-spacing:.5px}
+.icon-btn.sos::after{content:'';position:absolute;inset:0;border-radius:15px;box-shadow:0 0 0 0 rgba(229,72,77,.5);animation:ring 2.2s infinite}
+
+/* Hero */
+.hero{position:relative;border-radius:28px;padding:20px;color:#fff;overflow:hidden;
+  background:linear-gradient(140deg,#5E1F47 0%,#A93D6C 55%,#E2849A 100%);box-shadow:0 22px 40px -18px rgba(94,31,71,.65)}
+.blob{position:absolute;border-radius:50%;filter:blur(2px);animation:float 10s ease-in-out infinite}
+.blob.b1{width:180px;height:180px;right:-60px;top:-70px;background:rgba(255,255,255,.12)}
+.blob.b2{width:120px;height:120px;left:-40px;bottom:-50px;background:rgba(255,200,215,.18);animation-delay:-4s}
+.hero-top{position:relative;display:flex;align-items:center;gap:16px}
+.ring{position:relative;width:104px;height:104px;flex:none}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring circle{fill:none;stroke-width:9;stroke-linecap:round}
+.ring-bg{stroke:rgba(255,255,255,.18)}
+.ring-fg{stroke:#fff;transition:stroke-dashoffset 1.6s var(--ease) .2s}
+.ring-txt{position:absolute;inset:0;display:grid;place-content:center;text-align:center}
+.ring-txt b{font-family:var(--display);font-size:36px;line-height:1;font-weight:600}
+.ring-txt span{font-size:11px;opacity:.85;letter-spacing:.5px;text-transform:uppercase}
+.chip-glass{display:inline-block;padding:5px 10px;border-radius:20px;background:rgba(255,255,255,.18);font-size:11px;font-weight:700;letter-spacing:.3px;backdrop-filter:blur(6px)}
+.hero-info h2{font-size:19px;font-weight:800;margin:8px 0 4px;letter-spacing:-.2px}
+.hero-info p{font-size:13px;opacity:.9;line-height:1.45}
+.fruit-float{position:absolute;right:-4px;top:-8px;font-size:34px;animation:bob 3.5s ease-in-out infinite;filter:drop-shadow(0 6px 8px rgba(0,0,0,.2))}
+.hero-stats{position:relative;display:grid;grid-template-columns:repeat(3,1fr);margin-top:18px;background:rgba(255,255,255,.13);border-radius:18px;padding:12px 6px;backdrop-filter:blur(8px)}
+.hero-stats div{text-align:center;border-right:1px solid rgba(255,255,255,.18)}
+.hero-stats div:last-child{border:0}
+.hero-stats small{display:block;font-size:11px;opacity:.8}
+.hero-stats b{font-size:15px}
+.hero-bar{position:relative;height:6px;border-radius:6px;background:rgba(255,255,255,.2);margin-top:14px;overflow:hidden}
+.hero-bar i{position:absolute;inset:0 auto 0 0;width:0;border-radius:6px;background:linear-gradient(90deg,#FFD9E3,#fff);transition:width 1.6s var(--ease) .3s}
+
+/* Sections & cards */
+.h-sec{display:flex;justify-content:space-between;align-items:center;margin:26px 2px 12px}
+.h-sec h3{font-size:17px;font-weight:800;letter-spacing:-.2px}
+.h-sec a,.h-sec button{color:var(--primary);font-size:13px;font-weight:700;cursor:pointer}
+.card{background:var(--surface);border-radius:var(--r);padding:16px;box-shadow:var(--shadow);border:1px solid rgba(241,230,233,.8)}
+.card+.card{margin-top:12px}
+.muted{color:var(--muted)}
+.small{font-size:12.5px}
+.tap{transition:transform .18s var(--ease)}
+.tap:active{transform:scale(.97)}
+.rise{animation:rise .65s var(--ease) both;animation-delay:calc(var(--i,0) * 55ms)}
+
+.quick{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.q{display:flex;flex-direction:column;align-items:center;gap:8px;font-size:12px;font-weight:600;color:var(--ink2);text-align:center}
+.q span{width:60px;height:60px;border-radius:20px;display:grid;place-items:center;box-shadow:var(--shadow-sm);transition:transform .25s var(--spring)}
+.q:active span{transform:scale(.88) rotate(-4deg)}
+
+.c-blush{background:var(--blush);color:var(--primary)} .c-lav{background:var(--lav);color:var(--lav-ink)}
+.c-sage{background:var(--sage);color:var(--sage-ink)} .c-amber{background:var(--amber);color:var(--amber-ink)}
+.c-red{background:var(--red);color:var(--red-ink)} .c-sky{background:var(--sky);color:var(--sky-ink)} .c-peach{background:var(--peach);color:#B05A34}
+
+/* list rows */
+.rowi{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px dashed var(--line)}
+.rowi:last-child{border:0;padding-bottom:2px}
+.rowi:first-child{padding-top:2px}
+.ico{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;flex:none;font-size:20px}
+.grow{flex:1;min-width:0}
+.rowi b{font-size:14.5px;display:block}
+.rowi small{color:var(--muted);font-size:12.5px;display:block;margin-top:2px;line-height:1.4}
+.timepill{font-size:11.5px;font-weight:700;padding:4px 8px;border-radius:9px;background:var(--bg);color:var(--ink2);white-space:nowrap}
+.chk{width:34px;height:34px;border-radius:12px;border:2px solid #E7D7DD;display:grid;place-items:center;color:transparent;transition:all .35s var(--spring);flex:none}
+.chk.on{background:var(--sage-ink);border-color:var(--sage-ink);color:#fff;transform:scale(1.05)}
+.chk.skip{background:var(--amber);border-color:#EBCB8F;color:var(--amber-ink)}
+.chk svg{transition:transform .35s var(--spring)}
+.chk:not(.on):not(.skip) svg{transform:scale(0)}
+
+/* water */
+.water-card{display:flex;align-items:center;gap:18px}
+.glass{position:relative;width:74px;height:96px;border-radius:12px 12px 26px 26px;background:#EAF4FB;overflow:hidden;flex:none;box-shadow:inset 0 0 0 3px #fff,0 8px 18px -8px rgba(44,108,157,.5)}
+.water{position:absolute;left:0;right:0;bottom:0;height:0;background:linear-gradient(180deg,#7CC0EC,#3D8BC7);transition:height 1s var(--ease)}
+.water::before,.water::after{content:'';position:absolute;width:220%;height:220%;left:-60%;top:-208%;background:#EAF4FB;border-radius:42%;animation:spin 7s linear infinite}
+.water::after{border-radius:38%;opacity:.5;animation-duration:11s;top:-212%}
+.wctl{display:flex;gap:8px;margin-top:12px}
+.wbtn{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;background:var(--sky);color:var(--sky-ink);transition:transform .2s var(--spring)}
+.wbtn:active{transform:scale(.85)}
+.big-num{font-size:28px;font-weight:800;letter-spacing:-.5px}
+.big-num small{font-size:14px;color:var(--muted);font-weight:600}
+
+/* appointment */
+.appt{display:flex;gap:14px;align-items:center}
+.datebox{width:62px;height:68px;border-radius:18px;flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;background:linear-gradient(160deg,var(--lav-ink),#9B86E0);box-shadow:0 10px 20px -10px rgba(106,85,184,.8)}
+.datebox b{font-size:24px;line-height:1}
+.datebox small{font-size:11px;text-transform:uppercase;letter-spacing:1px;opacity:.9;margin-top:3px}
+.tag{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:4px 9px;border-radius:20px}
+
+/* meals scroller */
+.hscroll{display:flex;gap:12px;overflow-x:auto;margin:0 -20px;padding:4px 20px 10px;scroll-snap-type:x mandatory;scrollbar-width:none}
+.hscroll::-webkit-scrollbar{display:none}
+.meal{min-width:150px;scroll-snap-align:start;border-radius:20px;padding:14px;background:#fff;box-shadow:var(--shadow-sm);border:1px solid var(--line)}
+.meal .e{font-size:30px}
+.meal small{display:block;color:var(--primary);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.6px;margin-top:8px}
+.meal p{font-size:13px;font-weight:600;line-height:1.4;margin-top:4px;color:var(--ink)}
+
+/* checklist */
+.check-item{display:flex;align-items:center;gap:12px;padding:11px 0;cursor:pointer}
+.check-item span{flex:1;font-size:14px;font-weight:500;transition:color .3s}
+.check-item.on span{color:var(--muted);text-decoration:line-through}
+.check-item .chk{width:26px;height:26px;border-radius:9px}
+
+.alert-card{display:flex;gap:14px;align-items:center;border-radius:var(--r);padding:16px;background:linear-gradient(135deg,#FFF1F1,#FDE2E3);border:1px solid #F8CFD1}
+.alert-card .ico{background:#fff;color:var(--red-ink)}
+.alert-card b{color:#9E2427}
+.alert-card small{color:#B35457}
+
+.tip{position:relative;overflow:hidden;background:linear-gradient(135deg,var(--sage),#EFF8F3)}
+.tip::after{content:'💡';position:absolute;right:12px;bottom:-6px;font-size:58px;opacity:.18}
+
+/* Bottom nav */
+.nav{position:absolute;left:14px;right:14px;bottom:calc(14px + env(safe-area-inset-bottom));height:70px;border-radius:26px;display:flex;z-index:50;
+  background:rgba(255,255,255,.88);backdrop-filter:blur(20px) saturate(1.4);-webkit-backdrop-filter:blur(20px) saturate(1.4);
+  box-shadow:0 14px 34px -12px rgba(94,31,71,.3),inset 0 0 0 1px rgba(255,255,255,.8);padding:8px}
+.nav button{position:relative;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:10.5px;font-weight:700;color:var(--muted);z-index:1;transition:color .35s}
+.nav button svg{transition:transform .45s var(--spring)}
+.nav button.on{color:var(--primary)}
+.nav button.on svg{transform:translateY(-1px) scale(1.12)}
+.nav-pill{position:absolute;top:8px;left:8px;height:54px;border-radius:19px;background:var(--blush);transition:transform .5s var(--spring),width .3s}
+
+/* Pages */
+.page{position:absolute;inset:0;background:var(--bg);z-index:80;transform:translateX(100%);transition:transform .5s var(--ease);display:flex;flex-direction:column;box-shadow:-20px 0 40px -20px rgba(0,0,0,.2)}
+.page.open{transform:none}
+.page.closing{transform:translateX(100%)}
+.phead{display:flex;align-items:center;gap:12px;padding:calc(var(--sb) + 6px) 20px 12px;background:linear-gradient(var(--bg) 70%,rgba(251,246,242,0));position:relative;z-index:2}
+.phead h2{flex:1;font-size:19px;font-weight:800;letter-spacing:-.3px}
+.pbody{flex:1;padding:6px 20px 40px}
+.page-dim{position:absolute;inset:0;background:rgba(43,26,38,.0);z-index:79;pointer-events:none;transition:background .5s}
+.page-dim.on{background:rgba(43,26,38,.18)}
+
+/* Sheets */
+.backdrop{position:absolute;inset:0;background:rgba(43,26,38,.42);opacity:0;pointer-events:none;transition:opacity .4s;z-index:120;backdrop-filter:blur(2px)}
+.backdrop.on{opacity:1;pointer-events:auto}
+.sheet{position:absolute;left:0;right:0;bottom:0;max-height:88%;background:var(--bg);border-radius:30px 30px 0 0;z-index:130;transform:translateY(105%);transition:transform .55s var(--ease);display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom)}
+.sheet.on{transform:none}
+.grab{width:42px;height:5px;border-radius:5px;background:#E3D3D9;margin:10px auto 4px;flex:none}
+#sheetBody{padding:8px 22px 28px;overflow-y:auto;scrollbar-width:none}
+.sheet h3{font-size:20px;font-weight:800;letter-spacing:-.3px}
+
+/* Toast */
+.toast{position:absolute;left:50%;top:calc(var(--sb) + 8px);transform:translate(-50%,-140%);z-index:200;background:#2B1A26;color:#fff;padding:12px 18px;border-radius:16px;font-size:13.5px;font-weight:600;display:flex;gap:8px;align-items:center;box-shadow:0 14px 30px -10px rgba(0,0,0,.5);transition:transform .5s var(--spring);white-space:nowrap;max-width:90%}
+.toast.on{transform:translate(-50%,0)}
+
+/* Chips */
+.chips{display:flex;gap:8px;overflow-x:auto;margin:0 -20px;padding:2px 20px 6px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;padding:9px 15px;border-radius:14px;background:#fff;font-size:13px;font-weight:600;color:var(--ink2);border:1.5px solid var(--line);transition:all .3s var(--ease)}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.search{display:flex;align-items:center;gap:10px;background:#fff;border-radius:16px;padding:0 14px;height:50px;box-shadow:var(--shadow-sm);border:1.5px solid transparent;transition:border .2s;margin-bottom:14px}
+.search:focus-within{border-color:var(--primary)}
+.search input{border:0;outline:0;flex:1;background:none;font-size:14.5px}
+.search svg{color:var(--muted)}
+
+.badge{font-size:11px;font-weight:700;padding:4px 9px;border-radius:9px;white-space:nowrap}
+.b-rec{background:var(--sage);color:var(--sage-ink)} .b-safe{background:var(--sky);color:var(--sky-ink)}
+.b-limit{background:var(--amber);color:var(--amber-ink)} .b-avoid{background:var(--red);color:var(--red-ink)} .b-consult{background:var(--lav);color:var(--lav-ink)}
+
+.food{display:flex;gap:12px;align-items:center;padding:12px;border-radius:20px;background:#fff;box-shadow:var(--shadow-sm);margin-bottom:10px;cursor:pointer}
+.food .ico{width:52px;height:52px;border-radius:17px;font-size:26px;background:var(--bg)}
+.food .ta{font-size:12px;color:var(--muted)}
+.review-note{display:flex;gap:8px;align-items:flex-start;font-size:12px;color:var(--ink2);background:var(--amber);border-radius:14px;padding:10px 12px;line-height:1.5}
+
+/* Baby */
+.weeks{display:flex;gap:8px;overflow-x:auto;margin:0 -20px;padding:4px 20px 12px;scrollbar-width:none;scroll-behavior:smooth}
+.weeks::-webkit-scrollbar{display:none}
+.wk{flex:none;width:52px;height:64px;border-radius:18px;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:800;font-size:17px;border:1.5px solid var(--line);transition:all .35s var(--spring)}
+.wk small{font-size:9.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.wk.now{border-color:var(--primary2)}
+.wk.on{background:linear-gradient(160deg,var(--primary),var(--deep));color:#fff;border-color:transparent;transform:translateY(-3px);box-shadow:0 10px 20px -8px rgba(194,73,122,.7)}
+.wk.on small{color:rgba(255,255,255,.8)}
+.fruit-stage{text-align:center;padding:10px 0 4px}
+.fruit-orb{position:relative;width:210px;height:210px;margin:6px auto 12px;display:grid;place-items:center}
+.orb-ring{position:absolute;border-radius:50%}
+.orb-ring.r1{inset:0;background:radial-gradient(circle at 35% 30%,#fff 0%,var(--blush) 55%,#F8D3DF 100%);box-shadow:0 26px 50px -20px rgba(194,73,122,.55)}
+.orb-ring.r2{inset:-14px;border:1.5px dashed #EBC6D3;animation:spin 30s linear infinite}
+.fruit-big{position:relative;font-size:96px;animation:bob 4s ease-in-out infinite;filter:drop-shadow(0 16px 14px rgba(94,31,71,.25))}
+.pop .fruit-big{animation:popIn .7s var(--spring),bob 4s .7s ease-in-out infinite}
+.pop .fruit-name,.pop .measure{animation:fadeUp .6s var(--ease) both}
+.fruit-cap{color:var(--muted);font-size:13px;font-weight:600}
+.fruit-name{font-family:var(--display);font-size:32px;font-weight:600;margin-top:2px;letter-spacing:-.5px}
+.measure{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0 6px}
+.measure div{background:#fff;border-radius:18px;padding:12px 6px;box-shadow:var(--shadow-sm)}
+.measure small{display:block;font-size:11px;color:var(--muted);font-weight:600}
+.measure b{font-size:16px}
+.segment{position:relative;display:grid;grid-template-columns:repeat(3,1fr);background:#F1E7EA;border-radius:16px;padding:4px;margin:18px 0 12px}
+.segment button{position:relative;z-index:1;height:40px;font-weight:700;font-size:13.5px;color:var(--ink2);transition:color .3s}
+.segment button.on{color:var(--ink)}
+.seg-ind{position:absolute;top:4px;left:4px;bottom:4px;width:calc((100% - 8px)/3);background:#fff;border-radius:12px;box-shadow:var(--shadow-sm);transition:transform .45s var(--spring)}
+.seg-body.fade{animation:fadeUp .45s var(--ease)}
+.bullets{list-style:none;padding:0;margin:0}
+.bullets li{display:flex;gap:12px;padding:10px 0;font-size:14px;line-height:1.55;color:var(--ink2)}
+.bullets li::before{content:'';flex:none;width:8px;height:8px;border-radius:50%;background:var(--primary2);margin-top:7px;box-shadow:0 0 0 4px var(--blush)}
+.timeline{position:relative;padding-left:6px}
+.tl{position:relative;display:flex;gap:14px;padding:10px 0}
+.tl::before{content:'';position:absolute;left:11px;top:34px;bottom:-10px;width:2px;background:var(--line)}
+.tl:last-child::before{display:none}
+.tl .node{width:24px;height:24px;border-radius:50%;flex:none;display:grid;place-items:center;background:#fff;border:2px solid #E5D3DA;color:#fff;z-index:1}
+.tl.done .node{background:var(--sage-ink);border-color:var(--sage-ink)}
+.tl.now .node{background:var(--primary);border-color:var(--primary);box-shadow:0 0 0 5px var(--blush)}
+.tl b{font-size:14px;display:block}
+.tl small{color:var(--muted);font-size:12px}
+
+/* Care tiles */
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tile{position:relative;border-radius:22px;padding:16px;min-height:126px;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;text-align:left;box-shadow:var(--shadow-sm)}
+.tile .ti{width:42px;height:42px;border-radius:14px;background:rgba(255,255,255,.75);display:grid;place-items:center}
+.tile b{font-size:15px;display:block;color:var(--ink)}
+.tile small{font-size:12px;color:var(--ink2);opacity:.85}
+.tile::after{content:'';position:absolute;right:-26px;top:-26px;width:90px;height:90px;border-radius:50%;background:rgba(255,255,255,.35)}
+
+/* Kick counter */
+.kick-wrap{display:grid;place-items:center;padding:18px 0 6px}
+.kick-btn{position:relative;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#F28FAE,var(--primary) 55%,var(--deep));color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 26px 50px -18px rgba(194,73,122,.8);transition:transform .15s var(--ease)}
+.kick-btn:active{transform:scale(.94)}
+.kick-btn b{font-family:var(--display);font-size:60px;line-height:1;font-weight:600}
+.kick-btn small{font-size:12px;opacity:.9;letter-spacing:.6px;text-transform:uppercase;margin-top:4px}
+.kick-btn .wave{position:absolute;inset:0;border-radius:50%;border:2px solid var(--primary2);animation:ringOut 2.4s var(--ease) infinite;pointer-events:none}
+.kick-btn .wave:nth-child(2){animation-delay:1.2s}
+.burst{position:absolute;font-size:22px;pointer-events:none;animation:burst 1s var(--ease) forwards}
+.kstats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}
+.kstats div{background:#fff;border-radius:18px;padding:14px;text-align:center;box-shadow:var(--shadow-sm)}
+.kstats b{font-size:22px;display:block}
+.kstats small{color:var(--muted);font-size:12px}
+.info{display:flex;gap:12px;border-radius:18px;padding:14px;background:var(--lav);color:#4C3C8E;font-size:13px;line-height:1.55}
+.info.warn{background:var(--red);color:#8E2629}
+.info svg{flex:none;margin-top:1px}
+
+/* chart */
+.chart{width:100%;height:150px;display:block}
+.draw{stroke-dasharray:900;stroke-dashoffset:900;animation:draw 1.8s var(--ease) forwards}
+.area{opacity:0;animation:fadeIn 1s .8s forwards}
+.mini{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mini div{background:#fff;border-radius:18px;padding:14px;box-shadow:var(--shadow-sm)}
+.mini small{font-size:12px;color:var(--muted);font-weight:600;display:flex;align-items:center;gap:6px}
+.mini b{font-size:20px;display:block;margin-top:6px}
+.mini b span{font-size:12px;color:var(--muted);font-weight:600}
+.moods{display:flex;justify-content:space-between}
+.moods button{width:54px;height:54px;border-radius:18px;font-size:28px;background:var(--bg);transition:all .35s var(--spring);filter:grayscale(.6);opacity:.7}
+.moods button.on{background:var(--blush);transform:scale(1.12);filter:none;opacity:1;box-shadow:0 0 0 2px var(--primary2)}
+
+/* Learn */
+.ai-hero{position:relative;overflow:hidden;border-radius:26px;padding:20px;color:#fff;background:linear-gradient(140deg,#3E2A7A 0%,#7A4FB8 55%,#C26FB5 100%);box-shadow:0 20px 40px -18px rgba(62,42,122,.7)}
+.ai-hero h3{font-size:20px;font-weight:800;margin:10px 0 6px}
+.ai-hero p{font-size:13px;opacity:.88;line-height:1.5}
+.ai-orb{position:absolute;right:-20px;top:-20px;width:130px;height:130px;border-radius:50%;background:radial-gradient(circle at 30% 30%,rgba(255,255,255,.6),rgba(255,255,255,0) 60%);animation:float 7s ease-in-out infinite}
+.ai-ask{display:flex;align-items:center;gap:10px;margin-top:14px;background:rgba(255,255,255,.18);border-radius:16px;padding:12px 14px;font-size:13.5px;backdrop-filter:blur(6px)}
+.article{display:flex;gap:14px;align-items:center;padding:12px;background:#fff;border-radius:20px;box-shadow:var(--shadow-sm);margin-bottom:10px;cursor:pointer}
+.article .thumb{width:74px;height:74px;border-radius:18px;display:grid;place-items:center;font-size:34px;flex:none}
+.article b{font-size:14.5px;line-height:1.35;display:block}
+.article small{color:var(--muted);font-size:12px}
+.flip{min-width:230px;height:170px;perspective:900px;scroll-snap-align:start;cursor:pointer}
+.flip-in{position:relative;width:100%;height:100%;transition:transform .8s var(--ease);transform-style:preserve-3d}
+.flip.on .flip-in{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;border-radius:22px;padding:16px;backface-visibility:hidden;-webkit-backface-visibility:hidden;display:flex;flex-direction:column;justify-content:space-between;box-shadow:var(--shadow-sm)}
+.face.front{background:linear-gradient(145deg,var(--peach),#FFF2EA)}
+.face.back{background:linear-gradient(145deg,var(--sage),#F3FAF6);transform:rotateY(180deg)}
+.face small{font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase}
+.face p{font-size:14px;font-weight:600;line-height:1.45}
+.acc{background:#fff;border-radius:18px;box-shadow:var(--shadow-sm);margin-bottom:10px;overflow:hidden}
+.acc-h{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:16px;font-weight:700;font-size:14px;width:100%;text-align:left}
+.acc-h svg{transition:transform .4s var(--ease);flex:none;color:var(--muted)}
+.acc.on .acc-h svg{transform:rotate(90deg)}
+.acc-b{display:grid;grid-template-rows:0fr;transition:grid-template-rows .45s var(--ease)}
+.acc.on .acc-b{grid-template-rows:1fr}
+.acc-b>div{overflow:hidden}
+.acc-b p{padding:0 16px 16px;color:var(--ink2);font-size:13.5px;line-height:1.6}
+
+/* Chat */
+.page.chat .pbody{display:flex;flex-direction:column;padding:0;min-height:0}
+.msgs{flex:1;overflow-y:auto;padding:6px 18px 12px;display:flex;flex-direction:column;gap:10px;scrollbar-width:none}
+.msg{max-width:84%;padding:12px 14px;border-radius:20px;font-size:14px;line-height:1.55;animation:msgIn .45s var(--spring) both}
+.msg.me{align-self:flex-end;background:linear-gradient(135deg,var(--primary),#A43A69);color:#fff;border-bottom-right-radius:6px}
+.msg.bot{align-self:flex-start;background:#fff;box-shadow:var(--shadow-sm);border-bottom-left-radius:6px;color:var(--ink)}
+.msg.bot .disc{display:block;margin-top:8px;font-size:11px;color:var(--muted);border-top:1px dashed var(--line);padding-top:6px}
+.msg.emer{background:linear-gradient(135deg,#FFF0F0,#FDE1E2);border:1px solid #F5C3C5;color:#7F1F22}
+.msg ul{margin:6px 0 0;padding-left:18px}
+.typing{display:flex;gap:4px;padding:16px}
+.typing i{width:7px;height:7px;border-radius:50%;background:var(--primary2);animation:dot 1.1s infinite}
+.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+.sugg{display:flex;gap:8px;overflow-x:auto;padding:4px 18px 10px;scrollbar-width:none}
+.sugg::-webkit-scrollbar{display:none}
+.sugg button{flex:none;padding:9px 13px;border-radius:14px;background:var(--lav);color:var(--lav-ink);font-size:12.5px;font-weight:700}
+.chatbar{display:flex;gap:8px;align-items:center;padding:10px 14px calc(14px + env(safe-area-inset-bottom));background:#fff;border-top:1px solid var(--line)}
+.chatbar input{flex:1;height:48px;border-radius:16px;border:1.5px solid var(--line);padding:0 14px;outline:none;background:var(--bg);font-size:14px}
+.chatbar input:focus{border-color:var(--lav-ink)}
+.send{width:48px;height:48px;border-radius:16px;display:grid;place-items:center;background:linear-gradient(135deg,var(--lav-ink),#9A6FD0);color:#fff;transition:transform .2s var(--spring)}
+.send:active{transform:scale(.88)}
+.mic{width:48px;height:48px;border-radius:16px;display:grid;place-items:center;background:var(--lav);color:var(--lav-ink)}
+.ai-disc{margin:0 18px 8px;font-size:11.5px;text-align:center;color:var(--muted)}
+
+/* Profile */
+.prof{position:relative;overflow:hidden;border-radius:28px;padding:22px;text-align:center;background:linear-gradient(160deg,#fff,var(--blush));box-shadow:var(--shadow)}
+.prof .avatar{width:78px;height:78px;border-radius:26px;font-size:30px;margin:0 auto 12px}
+.prof h2{font-size:21px;font-weight:800}
+.pstats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:16px}
+.pstats div{background:#fff;border-radius:16px;padding:10px 4px}
+.pstats b{display:block;font-size:15px}
+.pstats small{font-size:11px;color:var(--muted)}
+.menu{background:#fff;border-radius:22px;box-shadow:var(--shadow-sm);padding:6px 14px}
+.mi{display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--line);width:100%;text-align:left}
+.mi:last-child{border:0}
+.mi .ico{width:40px;height:40px;border-radius:13px}
+.mi b{font-size:14.5px;font-weight:600;flex:1}
+.mi .chev{color:#CDBCC4}
+.plus-card{border-radius:24px;padding:18px;color:#fff;background:linear-gradient(135deg,#2B1A26,#5E1F47);display:flex;gap:14px;align-items:center;box-shadow:var(--shadow)}
+.plus-card b{font-size:16px}
+.plus-card small{opacity:.75;font-size:12px;line-height:1.4;display:block;margin-top:3px}
+
+.switch{position:relative;width:48px;height:28px;border-radius:28px;background:#E5D7DC;transition:background .3s;flex:none}
+.switch::after{content:'';position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.2);transition:transform .4s var(--spring)}
+.switch.on{background:var(--sage-ink)}
+.switch.on::after{transform:translateX(20px)}
+
+.progress{height:10px;border-radius:10px;background:#F1E4E8;overflow:hidden}
+.progress i{display:block;height:100%;border-radius:10px;background:linear-gradient(90deg,var(--primary2),var(--primary));transition:width .8s var(--ease)}
+
+/* Emergency */
+.emer-hero{border-radius:26px;padding:22px;color:#fff;background:linear-gradient(145deg,#B92F35,#E5585B);position:relative;overflow:hidden;box-shadow:0 20px 40px -18px rgba(185,47,53,.8)}
+.emer-hero h3{font-size:21px;font-weight:800;margin-top:10px}
+.emer-hero p{font-size:13.5px;opacity:.92;margin-top:6px;line-height:1.5}
+.emer-hero .pulse-dot{width:54px;height:54px;border-radius:18px;background:rgba(255,255,255,.2);display:grid;place-items:center;animation:beat 1.6s infinite}
+.call-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.call{display:flex;flex-direction:column;gap:6px;align-items:flex-start;padding:14px;border-radius:20px;background:#fff;box-shadow:var(--shadow-sm);text-decoration:none;color:var(--ink);text-align:left}
+.call b{font-size:14px}
+.call small{font-size:11.5px;color:var(--muted)}
+
+/* Breathing */
+.breath{display:grid;place-items:center;padding:20px 0}
+.b-circle{width:190px;height:190px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle,#fff 0%,var(--sage) 60%,#BFE3D0 100%);box-shadow:0 0 0 18px rgba(46,122,90,.07),0 0 0 36px rgba(46,122,90,.04);font-weight:800;font-size:18px;color:var(--sage-ink);transform:scale(.7);transition:transform 4s ease-in-out}
+.b-circle.in{transform:scale(1.05)}
+
+/* Keyframes */
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes fadeIn{to{opacity:1}}
+@keyframes rise{from{opacity:0;transform:translateY(22px) scale(.98)}to{opacity:1;transform:none}}
+@keyframes viewIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes logoIn{from{opacity:0;transform:scale(.4) rotate(-20deg)}to{opacity:1;transform:none}}
+@keyframes pulse{0%{transform:scale(.85);opacity:.9}100%{transform:scale(1.9);opacity:0}}
+@keyframes ring{0%{box-shadow:0 0 0 0 rgba(229,72,77,.5)}80%,100%{box-shadow:0 0 0 12px rgba(229,72,77,0)}}
+@keyframes ringOut{0%{transform:scale(1);opacity:.8}100%{transform:scale(1.45);opacity:0}}
+@keyframes dot{0%,100%{opacity:.3;transform:translateY(0)}50%{opacity:1;transform:translateY(-4px)}}
+@keyframes float{0%,100%{transform:translate(0,0)}50%{transform:translate(-14px,16px)}}
+@keyframes bob{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-10px) rotate(3deg)}}
+@keyframes morph{0%,100%{border-radius:44% 56% 52% 48%/48% 44% 56% 52%;transform:rotate(0)}50%{border-radius:56% 44% 46% 54%/54% 56% 44% 46%;transform:rotate(12deg)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes beat{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
+@keyframes popIn{0%{transform:scale(.2) rotate(-25deg);opacity:0}100%{transform:scale(1);opacity:1}}
+@keyframes msgIn{from{opacity:0;transform:translateY(10px) scale(.95)}to{opacity:1;transform:none}}
+@keyframes draw{to{stroke-dashoffset:0}}
+@keyframes burst{0%{opacity:1;transform:translate(0,0) scale(.6)}100%{opacity:0;transform:translate(var(--x),var(--y)) scale(1.3)}}
+@keyframes ripple{to{transform:scale(3);opacity:0}}
+.ripple{position:absolute;border-radius:50%;background:currentColor;opacity:.16;transform:scale(0);animation:ripple .6s var(--ease);pointer-events:none}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+<div class="device" id="device">
+  <div class="island"></div>
+  <div class="screen" id="screen">
+    <div class="statusbar light" id="statusbar">
+      <span id="clock">9:41</span>
+      <span class="sb-icons">
+        <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+        <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor"><path d="M8 2.5c2.3 0 4.4.9 6 2.4l1.2-1.3A10.2 10.2 0 0 0 8 .7 10.2 10.2 0 0 0 .8 3.6L2 4.9a8.4 8.4 0 0 1 6-2.4zm0 3.6c1.3 0 2.5.5 3.4 1.3l1.2-1.3A6.7 6.7 0 0 0 8 4.3a6.7 6.7 0 0 0-4.6 1.8l1.2 1.3c.9-.8 2.1-1.3 3.4-1.3zM8 9.6l2-2.1a3 3 0 0 0-4 0z"/></svg>
+        <svg width="26" height="12" viewBox="0 0 26 12"><rect x=".5" y=".5" width="22" height="11" rx="3.5" fill="none" stroke="currentColor" opacity=".45"/><rect x="2" y="2" width="16" height="8" rx="2" fill="currentColor"/><rect x="23.5" y="4" width="2" height="4" rx="1" fill="currentColor" opacity=".45"/></svg>
+      </span>
+    </div>
+
+    <!-- Splash -->
+    <section id="splash" class="layer">
+      <span class="bubble-bg" style="width:260px;height:260px;top:-80px;left:-90px"></span>
+      <span class="bubble-bg" style="width:200px;height:200px;bottom:-60px;right:-60px;animation-delay:-3s"></span>
+      <div class="splash-logo"><span class="pulse"></span><span class="pulse"></span>
+        <div class="logo-core" id="logoSvg"></div>
+      </div>
+      <div class="splash-title">Amma</div>
+      <div class="splash-tag">Caring for two, every single day</div>
+      <div class="splash-ta">அம்மா · உங்கள் கர்ப்பகால துணை</div>
+      <div class="loader"><i></i><i></i><i></i></div>
+    </section>
+
+    <!-- Onboarding -->
+    <section id="onboard" class="layer hidden">
+      <button class="ob-skip" onclick="toSetup()">Skip</button>
+      <div class="ob-track" id="obTrack">
+        <div class="ob-slide">
+          <div class="ob-art"><div class="ob-blob" style="background:linear-gradient(135deg,#FCE7EE,#F8D0DE)"></div><div class="ob-main">🤰</div>
+            <div class="ob-mini" style="top:18px;right:6px">🍋</div><div class="ob-mini" style="bottom:26px;left:0;animation-delay:-2s">📅</div></div>
+          <h2>Your pregnancy,<br>week by week</h2><p>See how your baby grows, what changes in your body, and what to expect next.</p>
+        </div>
+        <div class="ob-slide">
+          <div class="ob-art"><div class="ob-blob" style="background:linear-gradient(135deg,#E2F2EA,#C8E8D7)"></div><div class="ob-main">🥗</div>
+            <div class="ob-mini" style="top:14px;left:10px">🌿</div><div class="ob-mini" style="bottom:30px;right:0;animation-delay:-2s">🥥</div></div>
+          <h2>Eat well,<br>the Indian way</h2><p>South and North Indian meal ideas, plus clear guidance on what to eat, limit and avoid.</p>
+        </div>
+        <div class="ob-slide">
+          <div class="ob-art"><div class="ob-blob" style="background:linear-gradient(135deg,#EEE8FC,#D9CDF7)"></div><div class="ob-main">💊</div>
+            <div class="ob-mini" style="top:20px;right:4px">🔔</div><div class="ob-mini" style="bottom:22px;left:6px;animation-delay:-2s">👨‍👩‍👧</div></div>
+          <h2>Never miss a<br>medicine or checkup</h2><p>Reminders for prescribed medicines and appointments — and your family can stay in the loop.</p>
+        </div>
+      </div>
+      <div class="ob-foot"><div class="dots" id="obDots"><i class="on"></i><i></i><i></i></div>
+        <button class="btn" id="obNext" onclick="obNext()">Next</button></div>
+    </section>
+
+    <!-- Setup -->
+    <section id="setup" class="layer hidden">
+      <div class="scroll">
+        <div class="setup-head"><div class="avatar" style="width:52px;height:52px" id="setupLogo"></div>
+          <h2>Let's set up your journey</h2><p>This helps Amma personalise your week-by-week guide.</p></div>
+        <label class="label">Your name</label>
+        <input class="field" id="suName" placeholder="Enter your name" value="Priya">
+        <label class="label">How should we date your pregnancy?</label>
+        <div class="choice" id="suMode"><button class="on" data-v="lmp">Last period (LMP)</button><button data-v="edd">Due date from doctor</button></div>
+        <label class="label" id="suDateLbl">First day of last period</label>
+        <input class="field" type="date" id="suDate">
+        <div id="eddPreview"></div>
+        <label class="label">Food preference</label>
+        <div class="choice" id="suDiet"><button class="on" data-v="veg">🥦 Veg</button><button data-v="egg">🥚 Eggetarian</button><button data-v="nonveg">🍗 Non-veg</button></div>
+        <label class="label">Language</label>
+        <div class="choice" id="suLang"><button class="on" data-v="en">English</button><button data-v="ta" class="ta">தமிழ்</button></div>
+        <p class="small muted" style="margin-top:16px;line-height:1.5">🔒 Your health data stays private. You decide what to share with family.</p>
+      </div>
+      <button class="btn block" onclick="finishSetup()">Start my journey</button>
+    </section>
+
+    <!-- App -->
+    <section id="app" class="layer hidden">
+      <main id="view" class="view scroll"></main>
+      <nav class="nav" id="nav">
+        <span class="nav-pill" id="navPill"></span>
+        <button data-tab="home" class="on"></button>
+        <button data-tab="baby"></button>
+        <button data-tab="care"></button>
+        <button data-tab="learn"></button>
+        <button data-tab="profile"></button>
+      </nav>
+    </section>
+
+    <div class="page-dim" id="pageDim"></div>
+    <div id="pages"></div>
+    <div class="backdrop" id="backdrop" onclick="closeSheet()"></div>
+    <div class="sheet" id="sheet"><div class="grab"></div><div id="sheetBody"></div></div>
+    <div class="toast" id="toast"></div>
+  </div>
+</div>
+
+<script>
+/* ================= Utilities ================= */
+const $=s=>document.querySelector(s);
+const DAY=864e5;
+const pad=n=>String(n).padStart(2,'0');
+const iso=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const parse=s=>new Date(s+'T00:00:00');
+const today=()=>{const d=new Date();d.setHours(0,0,0,0);return d};
+const addDays=(d,n)=>new Date(d.getTime()+n*DAY);
+const fmt=(d,o={day:'numeric',month:'short',year:'numeric'})=>d.toLocaleDateString('en-IN',o);
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const t12=s=>{let[h,m]=s.split(':').map(Number);const ap=h>=12?'PM':'AM';h=h%12||12;return `${h}:${pad(m)} ${ap}`};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ================= Icons ================= */
+const I={
+ home:"M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z",
+ baby:"M9 12h.01M15 12h.01M10 16c.5.3 1.2.5 2 .5s1.5-.2 2-.5M19 6.3a9 9 0 0 1 1.8 3.9 2 2 0 0 1 0 3.6 9 9 0 0 1-17.6 0 2 2 0 0 1 0-3.6A9 9 0 0 1 12 3c2 0 3.5 1.1 3.5 2.5s-.9 2.5-2 2.5c-.8 0-1.5-.4-1.5-1",
+ care:"M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3 .5-4.5 2-1.5-1.5-2.7-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7z M3.2 12H8l1.5-3 3 6 1.5-3h6.8",
+ learn:"M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5",
+ profile:"M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2 M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z",
+ heart:"M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3 .5-4.5 2-1.5-1.5-2.7-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7z",
+ bell:"M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9 M10.3 21a1.94 1.94 0 0 0 3.4 0",
+ plus:"M12 5v14M5 12h14", minus:"M5 12h14",
+ back:"m15 18-6-6 6-6", chev:"m9 18 6-6-6-6",
+ drop:"M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5S5 13 5 15a7 7 0 0 0 7 7z",
+ pill:"m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7z M8.5 8.5l7 7",
+ cal:"M8 2v4M16 2v4 M3 10h18 M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z",
+ foot:"M4 16v-2.4C4 11.5 3 10.5 3 8c0-2.7 1.5-6 4.5-6C9.4 2 10 3.8 10 5.5c0 3.1-2 5.7-2 8.7V16a2 2 0 1 1-4 0z M20 20v-2.4c0-2.1 1-3.1 1-5.6 0-2.7-1.5-6-4.5-6C14.6 6 14 7.8 14 9.5c0 3.1 2 5.7 2 8.7V20a2 2 0 1 0 4 0z M16 17h4 M4 13h4",
+ chat:"M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z",
+ phone:"M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z",
+ alert:"M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h16.9a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z M12 9v4 M12 17h.01",
+ check:"M20 6 9 17l-5-5", x:"M18 6 6 18M6 6l12 12",
+ search:"M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16z M21 21l-4.3-4.3",
+ food:"M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2 M7 2v20 M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7",
+ walk:"M13 4a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z M7 22l3-7 2.5 2.5V22 M10 15l1-5 3 2 3 1 M11 10 8 11.5 6.5 14",
+ bag:"M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z M3 6h18 M16 10a4 4 0 0 1-8 0",
+ file:"M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z M14 2v6h6 M16 13H8 M16 17H8",
+ users:"M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M22 21v-2a4 4 0 0 0-3-3.9 M16 3.1a4 4 0 0 1 0 7.8",
+ shield:"M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z",
+ globe:"M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z M2 12h20 M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z",
+ sliders:"M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6",
+ logout:"M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4 M16 17l5-5-5-5 M21 12H9",
+ mic:"M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z M19 10v2a7 7 0 0 1-14 0v-2 M12 19v3",
+ send:"m22 2-7 20-4-9-9-4z M22 2 11 13",
+ moon:"M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z",
+ scale:"M12 3v18 M5 7h14 M5 7l-3 7a3 3 0 0 0 6 0z M19 7l-3 7a3 3 0 0 0 6 0z",
+ spark:"M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z M19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z",
+ clock:"M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z M12 6v6l4 2",
+ upload:"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4 M17 8l-5-5-5 5 M12 3v12",
+ clip:"M9 2h6v4H9z M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2 M9 13l2 2 4-4",
+ wind:"M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2 M9.6 4.6A2 2 0 1 1 11 8H2 M12.6 19.4A2 2 0 1 0 14 16H2",
+ hosp:"M3 21h18 M5 21V7l7-4 7 4v14 M12 9v6 M9 12h6",
+ lock:"M5 11h14v10H5z M8 11V7a4 4 0 0 1 8 0v4",
+ edit:"M12 20h9 M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z",
+ info:"M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z M12 16v-4 M12 8h.01",
+ pin:"M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z M12 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6z",
+ crown:"M2 18h20 M3 8l4.5 4L12 5l4.5 7L21 8l-2 10H5z"
+};
+const ic=(n,s=22,w=2)=>`<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"><path d="${I[n]}"/></svg>`;
+const LOGO=s=>`<svg viewBox="0 0 64 64" width="${s}" height="${s}"><defs><linearGradient id="lg${s}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#FFD3E0"/></linearGradient></defs><path d="M32 56S9 42.5 9 25.5A12.5 12.5 0 0 1 32 18.6 12.5 12.5 0 0 1 55 25.5C55 42.5 32 56 32 56z" fill="url(#lg${s})"/><circle cx="32" cy="27" r="5.2" fill="#C2497A"/><path d="M23.5 42c1.8-6 5-9 8.5-9s6.7 3 8.5 9" fill="none" stroke="#C2497A" stroke-width="3.4" stroke-linecap="round"/></svg>`;
+
+/* ================= i18n ================= */
+const T={
+ en:{home:'Home',baby:'Baby',care:'Care',learn:'Learn',profile:'Profile',gm:'Good morning',ga:'Good afternoon',ge:'Good evening',
+   weeks:'weeks',tri:'Trimester',sizeOf:'Your baby is about the size of a',daysLeft:'Days to go',quick:'Quick access',kick:'Kick count',water:'Water',meds:'Medicines',ask:'Ask Amma',
+   todayMeds:"Today's medicines",hydration:'Hydration',nextAppt:'Next appointment',meals:"Today's meal plan",checklist:'Daily checklist',tip:'Tip of the day',warn:'Know the warning signs',warnSub:'Tap to see when to get help immediately',seeAll:'See all'},
+ ta:{home:'முகப்பு',baby:'குழந்தை',care:'பராமரிப்பு',learn:'கற்றல்',profile:'சுயவிவரம்',gm:'காலை வணக்கம்',ga:'மதிய வணக்கம்',ge:'மாலை வணக்கம்',
+   weeks:'வாரங்கள்',tri:'மும்மாதம்',sizeOf:'உங்கள் குழந்தையின் அளவு',daysLeft:'மீதமுள்ள நாட்கள்',quick:'விரைவு அணுகல்',kick:'அசைவு எண்ணிக்கை',water:'தண்ணீர்',meds:'மருந்துகள்',ask:'அம்மாவிடம் கேளுங்கள்',
+   todayMeds:'இன்றைய மருந்துகள்',hydration:'நீர்ச்சத்து',nextAppt:'அடுத்த சந்திப்பு',meals:'இன்றைய உணவுத் திட்டம்',checklist:'இன்றைய பட்டியல்',tip:'இன்றைய குறிப்பு',warn:'அபாய அறிகுறிகளை அறியுங்கள்',warnSub:'உடனடி உதவி எப்போது தேவை என அறிய தட்டவும்',seeAll:'அனைத்தும்'}
+};
+const t=k=>(T[S.lang]&&T[S.lang][k])||T.en[k]||k;
+
+/* ================= Data ================= */
+const WEEKS={4:['🌱','poppy seed','0.1 cm','< 1 g'],5:['⚪','sesame seed','0.2 cm','< 1 g'],6:['🫘','lentil','0.6 cm','< 1 g'],7:['🫐','blueberry','1 cm','< 1 g'],
+ 8:['🍇','grape','1.6 cm','1 g'],9:['🍒','cherry','2.3 cm','2 g'],10:['🍓','strawberry','3.1 cm','4 g'],11:['🍋‍🟩','lime','4.1 cm','7 g'],12:['🍑','plum','5.4 cm','14 g'],
+ 13:['🍋','lemon','7.4 cm','23 g'],14:['🍑','peach','8.7 cm','43 g'],15:['🍎','apple','10.1 cm','70 g'],16:['🥑','avocado','11.6 cm','100 g'],17:['🍊','pomegranate','13 cm','140 g'],
+ 18:['🍠','sweet potato','14.2 cm','190 g'],19:['🥭','mango','15.3 cm','240 g'],20:['🍌','banana','25.6 cm','300 g'],21:['🥕','carrot','26.7 cm','360 g'],22:['🌽','sweet corn cob','27.8 cm','430 g'],
+ 23:['🍊','grapefruit','28.9 cm','500 g'],24:['🌽','corn','30 cm','600 g'],25:['🥦','cauliflower','34.6 cm','660 g'],26:['🥬','lettuce','35.6 cm','760 g'],27:['🥬','cabbage','36.6 cm','875 g'],
+ 28:['🍆','brinjal','37.6 cm','1 kg'],29:['🎃','butternut squash','38.6 cm','1.15 kg'],30:['🥒','large cucumber','39.9 cm','1.3 kg'],31:['🥥','coconut','41.1 cm','1.5 kg'],32:['🥬','napa cabbage','42.4 cm','1.7 kg'],
+ 33:['🍍','pineapple','43.7 cm','1.9 kg'],34:['🍈','cantaloupe','45 cm','2.1 kg'],35:['🍈','honeydew melon','46.2 cm','2.4 kg'],36:['🥭','papaya (ripe)','47.4 cm','2.6 kg'],
+ 37:['🍈','winter melon','48.6 cm','2.9 kg'],38:['🎃','pumpkin','49.8 cm','3.1 kg'],39:['🍉','watermelon','50.7 cm','3.3 kg'],40:['🍉','jackfruit','51.2 cm','3.5 kg']};
+const wk=w=>{const d=WEEKS[clamp(w,4,40)];return{e:d[0],name:d[1],l:d[2],g:d[3]}};
+
+const DEV=[
+ [4,7,["The neural tube — which becomes the brain and spinal cord — is forming.","A tiny heart begins to beat and may be seen on an early scan.","Small buds for arms and legs start to appear."],
+  ["You may feel tired, have tender breasts and a missed period.","Nausea can start — it can happen any time of day.","Needing to pass urine often is common."],
+  ["Take folic acid as advised by your doctor.","Book your first antenatal visit.","Eat small, frequent meals if you feel nauseous."]],
+ [8,11,["All major organs have started forming.","Fingers and toes are beginning to separate.","Baby makes small movements you can't feel yet."],
+  ["Nausea and food aversions may peak.","Your waist may start to thicken.","Mood swings are common with hormone changes."],
+  ["Your doctor may suggest a dating scan.","Sip water through the day to stay hydrated.","Avoid raw or undercooked eggs, meat and fish."]],
+ [12,15,["Baby can open and close tiny fingers.","Kidneys begin producing urine.","Facial features become more defined."],
+  ["Nausea often eases around now.","Energy levels may start to return.","A small bump may begin to show."],
+  ["Ask your doctor about first-trimester screening.","Add iron-rich foods like greens, dal and dates.","Gentle walking is a good habit, if your doctor agrees."]],
+ [16,19,["Baby can make sucking movements.","Tiny bones are hardening.","Baby may begin to hear sounds."],
+  ["You may feel first flutters of movement between 16–22 weeks.","Some women notice darker patches of skin.","Back aches may begin as your bump grows."],
+  ["The anomaly scan is usually done around 18–22 weeks.","Sleep on your side with a pillow for support.","Wear comfortable, low-heeled footwear."]],
+ [20,23,["Baby is swallowing and practising breathing movements.","A protective coating called vernix covers the skin.","Sleep and wake cycles are forming."],
+  ["You're about halfway there!","Movements become easier to notice.","Mild swelling of the feet can occur."],
+  ["Start learning your baby's usual movement pattern.","Keep up calcium — curd, ragi, milk and greens.","Ask your doctor which vaccines are advised in pregnancy."]],
+ [24,27,["Lungs are developing branches and surfactant.","Baby responds to your voice and touch.","Eyes may begin to open."],
+  ["Heartburn and leg cramps are common.","Practice (Braxton Hicks) tightenings may start.","Stretch marks may appear."],
+  ["Glucose screening is commonly done between 24–28 weeks.","Smaller meals can ease heartburn.","Report any reduced movements to your care team promptly."]],
+ [28,31,["Baby's brain is growing rapidly.","Baby can blink and has eyelashes.","Baby is storing fat and gaining weight."],
+  ["Welcome to the third trimester.","Breathlessness and tiredness may return.","Sleep can become harder."],
+  ["Antenatal visits may become more frequent.","Start planning your hospital bag.","Rest with your feet up when you can."]],
+ [32,35,["Baby is gaining weight steadily.","Many babies settle head-down by now.","Bones are formed but still soft."],
+  ["You may pass urine more often.","Pelvic pressure can increase.","Braxton Hicks may be more frequent."],
+  ["Have your hospital bag ready by 35 weeks.","Learn the signs of labour.","Discuss birth preferences with your doctor."]],
+ [36,40,["From 37 weeks your baby is considered early term.","Lungs are maturing for life outside.","Baby may move lower into the pelvis."],
+  ["Breathing may ease as baby drops.","You may feel more pressure and discomfort.","Watch for labour signs: regular contractions, waters breaking, a show."],
+  ["Keep hospital documents ready by the door.","Go to hospital if your waters break or you bleed.","Keep tracking movements — they should not slow down before labour."]]
+];
+const devFor=w=>DEV.find(d=>w>=d[0]&&w<=d[1]).slice(2);
+
+const CLS={rec:['Recommended','b-rec'],safe:['Safe if prepared well','b-safe'],limit:['Limit','b-limit'],avoid:['Avoid','b-avoid'],consult:['Ask your doctor','b-consult']};
+const FOODS=[
+ {n:'Drumstick leaves',ta:'முருங்கைக் கீரை',e:'🌿',c:'Vegetables',s:'rec',nut:'Iron · Calcium · Vitamin A',ben:'A good plant source of iron, calcium and vitamins.',prep:'Wash well and cook thoroughly — as poriyal, in dal or adai.',care:'Eat the leaves as food. Do not take drumstick extracts or supplements without your doctor\u2019s advice.'},
+ {n:'Ragi (finger millet)',ta:'கேழ்வரகு',e:'🌾',c:'Grains',s:'rec',nut:'Calcium · Iron · Fibre',ben:'Excellent source of calcium; keeps you full for longer.',prep:'Ragi dosa, kanji, roti or adai.',care:'Cook well. Pair with a vitamin C food to help iron absorption.'},
+ {n:'Spinach & greens',ta:'கீரை வகைகள்',e:'🥬',c:'Vegetables',s:'rec',nut:'Folate · Iron · Fibre',ben:'Rich in folate, which supports baby\u2019s brain and spine development.',prep:'Wash thoroughly in clean water and cook.',care:'Avoid raw, unwashed greens.'},
+ {n:'Dal & pulses',ta:'பருப்பு வகைகள்',e:'🫘',c:'Pulses',s:'rec',nut:'Protein · Folate · Iron',ben:'Everyday protein for vegetarian mothers.',prep:'Sambar, dal, sundal, kootu.',care:'Cook well; soak overnight to reduce gas.'},
+ {n:'Curd (pasteurised)',ta:'தயிர்',e:'🥛',c:'Dairy',s:'rec',nut:'Calcium · Protein · Probiotics',ben:'Supports bones and digestion.',prep:'Set from boiled or pasteurised milk.',care:'Avoid curd made from raw milk.'},
+ {n:'Coconut water',ta:'இளநீர்',e:'🥥',c:'Beverages',s:'rec',nut:'Hydration · Potassium',ben:'Refreshing and hydrating.',prep:'Fresh, from a clean source.',care:'Drink soon after opening.'},
+ {n:'Guava',ta:'கொய்யா',e:'🍐',c:'Fruits',s:'rec',nut:'Vitamin C · Fibre',ben:'Vitamin C helps your body absorb iron.',prep:'Wash well; eat ripe.',care:'Peel or wash carefully.'},
+ {n:'Dates',ta:'பேரீச்சை',e:'🌰',c:'Fruits',s:'rec',nut:'Iron · Fibre · Energy',ben:'Quick energy and some iron.',prep:'2–3 as a snack.',care:'High in natural sugar — check with your doctor if you have high blood sugar.'},
+ {n:'Eggs (fully cooked)',ta:'முட்டை',e:'🥚',c:'Meat & seafood',s:'safe',nut:'Protein · Choline',ben:'High-quality protein for baby\u2019s growth.',prep:'Cook until white and yolk are firm.',care:'Avoid raw or half-boiled eggs.'},
+ {n:'Chicken (well cooked)',ta:'கோழி',e:'🍗',c:'Meat & seafood',s:'safe',nut:'Protein · Vitamin B12',ben:'Good protein and B vitamins.',prep:'Cook until no pink remains.',care:'Avoid street-side undercooked meat.'},
+ {n:'Low-mercury fish',ta:'மத்தி / சால்மன்',e:'🐟',c:'Meat & seafood',s:'safe',nut:'Omega-3 · Protein',ben:'Omega-3 supports baby\u2019s brain and eyes.',prep:'Choose fish like sardine; cook fully.',care:'Avoid raw fish. Ask your doctor how often to eat fish.'},
+ {n:'Paneer',ta:'பனீர்',e:'🧀',c:'Dairy',s:'safe',nut:'Protein · Calcium',ben:'Protein-rich vegetarian option.',prep:'Made from pasteurised milk; cook before eating.',care:'Avoid paneer of unknown source.'},
+ {n:'Ripe papaya',ta:'பழுத்த பப்பாளி',e:'🧡',c:'Fruits',s:'consult',nut:'Vitamin C · Fibre',ben:'Fully ripe papaya in small amounts is considered fine by many doctors.',prep:'Only fully ripe fruit.',care:'Advice varies — please check with your doctor. Avoid unripe or semi-ripe papaya.'},
+ {n:'Pineapple',ta:'அன்னாசி',e:'🍍',c:'Fruits',s:'limit',nut:'Vitamin C · Manganese',ben:'Normal food portions are generally considered safe.',prep:'Fresh, in moderate portions.',care:'Avoid very large amounts. Ask your doctor if unsure.'},
+ {n:'Tea & coffee',ta:'டீ / காபி',e:'☕',c:'Beverages',s:'limit',nut:'Caffeine',ben:'—',prep:'Have weaker cups, away from iron tablets.',care:'A commonly advised limit is 200 mg caffeine a day (about 2 mugs of instant coffee).'},
+ {n:'Sesame seeds',ta:'எள்',e:'🌰',c:'Nuts & seeds',s:'limit',nut:'Calcium · Healthy fats',ben:'Small amounts used in cooking are generally fine.',prep:'As part of chutney or laddu, occasionally.',care:'Ask your doctor before eating large amounts.'},
+ {n:'Street pani puri',ta:'பானி பூரி',e:'🥙',c:'Snacks',s:'limit',nut:'—',ben:'—',prep:'Prefer home-made with boiled water.',care:'Unclean water can cause infections like typhoid or hepatitis.'},
+ {n:'Unripe / raw papaya',ta:'பச்சைப் பப்பாளி',e:'🟢',c:'Fruits',s:'avoid',nut:'—',ben:'—',prep:'—',care:'Contains latex, which may trigger contractions. Avoid during pregnancy.'},
+ {n:'Unpasteurised milk',ta:'காய்ச்சாத பால்',e:'🐄',c:'Dairy',s:'avoid',nut:'—',ben:'—',prep:'Always boil milk.',care:'May carry Listeria and other harmful bacteria.'},
+ {n:'High-mercury fish',ta:'சுறா மீன்',e:'🦈',c:'Meat & seafood',s:'avoid',nut:'—',ben:'—',prep:'—',care:'Shark and swordfish are high in mercury, which can harm baby\u2019s nervous system.'},
+ {n:'Alcohol',ta:'மது',e:'🚫',c:'Beverages',s:'avoid',nut:'—',ben:'—',prep:'—',care:'No amount of alcohol is known to be safe in pregnancy.'}
+];
+const MEALS={
+ veg:[['🥞','Breakfast','Ragi dosa, sambar & coconut chutney'],['🍌','Mid-morning','Guava or a banana'],['🍛','Lunch','Rice, dal, keerai poriyal & curd'],['🥥','Evening','Roasted chana & coconut water'],['🫓','Dinner','Chapati, paneer curry & washed salad']],
+ egg:[['🍳','Breakfast','Idli, sambar & a boiled egg'],['🍌','Mid-morning','Guava or a banana'],['🍛','Lunch','Rice, dal, keerai poriyal & curd'],['🥜','Evening','Sundal & buttermilk'],['🫓','Dinner','Chapati, egg curry & vegetables']],
+ nonveg:[['🍳','Breakfast','Pongal, chutney & a boiled egg'],['🍐','Mid-morning','Guava or pomegranate'],['🍛','Lunch','Rice, sardine curry, keerai & curd'],['🥥','Evening','Roasted peanuts & coconut water'],['🍗','Dinner','Chapati, chicken curry & vegetables']]
+};
+const ARTICLES=[
+ {e:'🌸',c:'Pregnancy basics',bg:'c-blush',min:4,title:'Your second trimester: what to expect',body:['The second trimester (weeks 14–27) is often the most comfortable stretch of pregnancy. Nausea usually eases, energy returns, and you may feel your baby move for the first time.','This is a good time to build healthy routines — regular meals, gentle activity approved by your doctor, and enough rest.','Keep all your antenatal appointments. Your doctor will check your blood pressure, weight and baby\u2019s growth, and may arrange the anomaly scan and glucose screening.']},
+ {e:'🥬',c:'Nutrition',bg:'c-sage',min:5,title:'Iron in pregnancy: Indian foods that help',body:['Your blood volume increases a lot during pregnancy, so your need for iron goes up. Low iron (anaemia) is common in India.','Iron-rich foods include greens like murungai keerai and spinach, dals, rajma, chana, ragi, jaggery, dates, and — for non-vegetarians — eggs, chicken and fish.','Vitamin C foods like guava, amla, lemon and oranges help absorption. Tea and coffee reduce it, so keep them away from meals and iron tablets.','Take iron tablets exactly as your doctor prescribes.']},
+ {e:'🩺',c:'Medical checkups',bg:'c-lav',min:4,title:'Your antenatal checkups, explained',body:['Antenatal visits help catch problems early. Typical checks include blood pressure, weight, urine tests, blood tests (haemoglobin, blood group, Rh factor, sugar) and scans.','Common scans include an early dating scan, a first-trimester screening scan and an anomaly scan around 18–22 weeks. Growth scans are done when needed.','Your schedule depends on your health and your doctor\u2019s advice — always follow what your care team recommends.']},
+ {e:'👣',c:'Baby development',bg:'c-peach',min:3,title:'Getting to know your baby\u2019s movements',body:['Most mothers feel movements between 16 and 24 weeks. Over time, you\u2019ll notice your baby\u2019s own pattern.','There is no single "right" number of kicks — every baby is different. What matters is a change from your baby\u2019s usual pattern.','If movements slow down, change, or stop, contact your maternity care team immediately. Do not wait until the next day.']},
+ {e:'🌿',c:'Mental wellness',bg:'c-sky',min:4,title:'Feeling low? Caring for your mind',body:['Mood changes are common in pregnancy, but sadness or worry that lasts for two weeks or more deserves attention.','Talk to someone you trust and tell your doctor how you feel — support and treatment are available.','If you ever feel unable to cope, please reach out to your doctor or call Tele-MANAS on 14416 (free, 24×7).']},
+ {e:'🏥',c:'Labour & delivery',bg:'c-red',min:5,title:'Signs that labour is starting',body:['Signs of labour include regular, strengthening contractions, a "show" (mucus plug), lower back pain, and your waters breaking.','Call your hospital if your waters break, contractions become regular, or you have bleeding, reduced movements or severe pain.','Keep your hospital bag, documents and transport ready from around 35 weeks.']}
+];
+const MYTHS=[
+ ['Eating any papaya causes miscarriage.','Unripe papaya should be avoided. Fully ripe papaya in moderation is considered fine by many doctors — ask yours.'],
+ ['You must eat for two.','Extra energy needs are modest — roughly 350 extra kcal a day in the 2nd and 3rd trimesters. Quality matters more than quantity.'],
+ ['Ghee makes delivery easier.','There\u2019s no evidence for this. Small amounts are fine as part of a balanced diet.'],
+ ['Exercise is unsafe in pregnancy.','Gentle, regular activity is usually good for you — unless your doctor advises otherwise.'],
+ ['Saffron or milk makes the baby fair.','A baby\u2019s skin colour is decided by genes, not by food.']
+];
+const FAQ=[
+ ['How much weight should I gain?','It depends on your weight before pregnancy. Your doctor will guide you on a healthy range and check your weight at each visit.'],
+ ['Can I sleep on my back?','From the third trimester, sleeping on your side is commonly advised. Use pillows to stay comfortable.'],
+ ['Is travel safe during pregnancy?','Many women travel safely in the second trimester. Check with your doctor before long trips and carry your medical records.'],
+ ['When should I call my doctor?','Any bleeding, fluid leak, severe pain, severe headache, vision changes, or reduced baby movements — call immediately.']
+];
+const WARN=[['🩸','Vaginal bleeding'],['⚡','Severe abdominal pain'],['🤕','Severe headache'],['👁️','Blurred vision or seeing spots'],['👶','Reduced or no baby movements'],['💧','Leaking fluid from the vagina'],['😮‍💨','Difficulty breathing'],['❤️','Chest pain'],['🌀','Fits / seizures'],['🦶','Sudden swelling of face, hands or feet'],['🌡️','High fever']];
+const BAG={Mother:['Loose nightgowns (2–3)','Maternity pads','Nursing bras','Toiletries & towel','Slippers','Phone charger'],Baby:['Newborn clothes (4–5 sets)','Diapers','Soft cotton blankets','Mittens & caps','Baby wipes','Going-home outfit'],Documents:['Aadhaar / ID proof','Antenatal records & scans','Insurance card','Doctor\u2019s prescriptions','Blood group report']};
+const CHECKS=['Take my prescribed supplements','Drink 10 glasses of water','30-minute gentle walk (if advised)','Notice baby\u2019s movements','Eat one fruit and greens'];
+const REPORTS=[{t:'Anomaly scan report',c:'Ultrasound',d:-27,sz:'1.8 MB',e:'🩻'},{t:'Complete blood count (CBC)',c:'Blood',d:-45,sz:'420 KB',e:'🩸'},{t:'Urine routine',c:'Urine',d:-45,sz:'210 KB',e:'🧪'},{t:'Prescription — Dr. Meena',c:'Prescription',d:-30,sz:'300 KB',e:'📝'},{t:'Td vaccination record',c:'Vaccination',d:-60,sz:'150 KB',e:'💉'},{t:'Dating scan',c:'Ultrasound',d:-120,sz:'1.2 MB',e:'🩻'}];
+
+/* ================= State ================= */
+const KEY='amma_state_v1';
+function defaults(){
+ const d=today(), td=iso(d);
+ return {onboarded:false,name:'Priya',lmp:iso(addDays(d,-(24*7+3))),diet:'veg',lang:'en',
+  water:{d:td,n:5},waterGoal:10,
+  meds:[{id:1,name:'Folic acid',dose:'1 tablet · as prescribed',time:'08:00',note:'After breakfast',c:'c-sage'},
+        {id:2,name:'Iron + Folic acid',dose:'1 tablet · as prescribed',time:'14:00',note:'After lunch · avoid tea/milk for 1 hour',c:'c-red'},
+        {id:3,name:'Calcium + Vitamin D3',dose:'1 tablet · as prescribed',time:'20:30',note:'After dinner · keep a gap from iron',c:'c-sky'}],
+  medLog:{[td]:{1:'taken'}},
+  appts:[{id:1,title:'Antenatal check-up',doc:'Dr. Meena Krishnan',place:'Lotus Maternity Centre',d:iso(addDays(d,4)),time:'10:30',purpose:'BP, weight, baby growth & heartbeat',done:false},
+         {id:2,title:'Glucose screening (OGTT)',doc:'Lab · Lotus Maternity',place:'Lotus Maternity Centre',d:iso(addDays(d,16)),time:'08:00',purpose:'Ask your clinic if fasting is needed',done:false},
+         {id:3,title:'Anomaly scan',doc:'Dr. Meena Krishnan',place:'Lotus Scan Centre',d:iso(addDays(d,-27)),time:'11:00',purpose:'Detailed scan of baby\u2019s anatomy',done:true},
+         {id:4,title:'Blood & urine tests',doc:'Lab · Lotus Maternity',place:'Lotus Maternity Centre',d:iso(addDays(d,-45)),time:'09:00',purpose:'CBC, urine routine',done:true}],
+  kicks:[{d:iso(addDays(d,-1)),t:'19:40',n:10,m:22},{d:iso(addDays(d,-2)),t:'20:10',n:10,m:31},{d:iso(addDays(d,-3)),t:'18:55',n:10,m:26}],
+  weights:[[12,54.2],[14,54.8],[16,55.6],[18,56.4],[20,57.3],[22,58.2],[24,59.0]],
+  bp:[{d:iso(addDays(d,-14)),s:110,di:72},{d:iso(addDays(d,-7)),s:112,di:74},{d:iso(addDays(d,-1)),s:108,di:70}],
+  mood:3,symptoms:['Back pain'],sleep:7.5,
+  check:{d:td,done:[0]},bag:{},
+  family:[{name:'Arun',rel:'Husband',role:'Partner',p:{appts:true,meds:true,baby:true,health:false,reports:false}},
+          {name:'Kamala',rel:'Mother',role:'Family viewer',p:{appts:true,meds:false,baby:true,health:false,reports:false}}],
+  notif:{meds:true,appts:true,water:true,weekly:true,baby:true},
+  viewWeek:null};
+}
+let S;
+try{S=Object.assign(defaults(),JSON.parse(localStorage.getItem(KEY)||'null')||{})}catch(e){S=defaults()}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+(function rollover(){const td=iso(today());if(S.water.d!==td)S.water={d:td,n:0};if(S.check.d!==td)S.check={d:td,done:[]};if(!S.medLog[td])S.medLog[td]={};})();
+
+function preg(){
+ const lmp=parse(S.lmp), days=Math.max(0,Math.round((today()-lmp)/DAY));
+ const week=Math.floor(days/7), day=days%7, edd=addDays(lmp,280), left=Math.max(0,Math.round((edd-today())/DAY));
+ return {days,week,day,edd,left,tri:week<14?1:week<28?2:3,pct:clamp(Math.round(days/280*100),0,100)};
+}
+const triOf=w=>w<14?'1st':w<28?'2nd':'3rd';
+
+/* ================= Boot ================= */
+function fit(){const d=$('#device');if(innerWidth<=520){d.style.transform='';return}const s=Math.min(1,(innerHeight-28)/852,(innerWidth-28)/393);d.style.transform=`scale(${s})`}
+addEventListener('resize',fit);fit();
+function clock(){const n=new Date();$('#clock').textContent=`${n.getHours()%12||12}:${pad(n.getMinutes())}`}
+clock();setInterval(clock,20000);
+$('#logoSvg').innerHTML=LOGO(64);
+$('#setupLogo').innerHTML=LOGO(34);
+
+function show(id){['splash','onboard','setup','app'].forEach(x=>$('#'+x).classList.toggle('hidden',x!==id));$('#statusbar').classList.toggle('light',id==='splash')}
+setTimeout(()=>{S.onboarded?startApp():show('onboard')},2100);
+
+/* Onboarding */
+let obI=0;
+function obNext(){if(obI>=2)return toSetup();obI++;$('#obTrack').style.transform=`translateX(-${obI*100}%)`;
+ [...$('#obDots').children].forEach((d,i)=>d.classList.toggle('on',i===obI));$('#obNext').textContent=obI===2?'Get started':'Next'}
+function toSetup(){show('setup');const inp=$('#suDate');inp.value=S.lmp;inp.max=iso(today());updateEdd()}
+document.querySelectorAll('.choice').forEach(g=>g.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+ [...g.children].forEach(x=>x.classList.toggle('on',x===b));if(g.id==='suMode'){const lmp=b.dataset.v==='lmp';$('#suDateLbl').textContent=lmp?'First day of last period':'Due date given by your doctor';
+ const inp=$('#suDate');if(lmp){inp.max=iso(today());inp.removeAttribute('min');inp.value=S.lmp}else{inp.removeAttribute('max');inp.min=iso(today());inp.value=iso(addDays(parse(S.lmp),280))}updateEdd()}}));
+$('#suDate').addEventListener('input',updateEdd);
+function setupLmp(){const v=$('#suDate').value;if(!v)return null;const mode=$('#suMode .on').dataset.v;return mode==='lmp'?v:iso(addDays(parse(v),-280))}
+function updateEdd(){const l=setupLmp();if(!l){$('#eddPreview').innerHTML='';return}const days=Math.round((today()-parse(l))/DAY);
+ if(days<14||days>300){$('#eddPreview').innerHTML=`<div class="edd-preview"><span class="big">🗓️</span><div><b>Please check the date</b><small>It should fall within a current pregnancy.</small></div></div>`;return}
+ $('#eddPreview').innerHTML=`<div class="edd-preview"><span class="big">${wk(Math.floor(days/7)).e}</span><div><b>${Math.floor(days/7)} weeks, ${days%7} days</b><small>Estimated due date: ${fmt(addDays(parse(l),280))}</small></div></div>`}
+function finishSetup(){const l=setupLmp();if(!l)return toast('Please choose a date');const days=Math.round((today()-parse(l))/DAY);if(days<14||days>300)return toast('Please check the date');
+ S.name=($('#suName').value.trim()||'Mom');S.lmp=l;S.diet=$('#suDiet .on').dataset.v;S.lang=$('#suLang .on').dataset.v;S.onboarded=true;S.viewWeek=null;save();startApp();toast('Welcome to Amma, '+S.name+' 💗')}
+
+function startApp(){show('app');buildNav();go('home',true)}
+
+/* ================= Navigation ================= */
+const TABS=['home','baby','care','learn','profile'];
+const TAB_IC={home:'home',baby:'baby',care:'care',learn:'learn',profile:'profile'};
+let cur='home';
+function buildNav(){document.querySelectorAll('#nav button').forEach(b=>{b.innerHTML=`${ic(TAB_IC[b.dataset.tab],22)}<span>${t(b.dataset.tab)}</span>`;b.onclick=()=>go(b.dataset.tab)});movePill()}
+function movePill(){const b=document.querySelector(`#nav button[data-tab="${cur}"]`);if(!b)return;const p=$('#navPill');p.style.width=b.offsetWidth+'px';p.style.transform=`translateX(${b.offsetLeft-8}px)`}
+function go(tab,force){if(tab===cur&&!force){$('#view').scrollTo({top:0,behavior:'smooth'});return}
+ cur=tab;document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.tab===tab));movePill();renderTab(true)}
+function renderTab(anim){const v=$('#view');const st=v.scrollTop;v.innerHTML=R[cur]();
+ if(anim){v.scrollTop=0;v.classList.remove('swap');void v.offsetWidth;v.classList.add('swap');stagger(v)}else v.scrollTop=st;
+ after[cur]&&after[cur](anim)}
+function stagger(root){[...root.children].forEach((el,i)=>{el.style.setProperty('--i',Math.min(i,10));el.classList.add('rise')})}
+
+/* ================= Tab renders ================= */
+const R={},after={};
+R.home=()=>{
+ const p=preg(), w=wk(p.week), hr=new Date().getHours(), g=hr<12?'gm':hr<17?'ga':'ge', log=S.medLog[iso(today())]||{};
+ const meds=[...S.meds].sort((a,b)=>a.time.localeCompare(b.time));
+ const next=S.appts.filter(a=>!a.done&&parse(a.d)>=today()).sort((a,b)=>a.d.localeCompare(b.d))[0];
+ const taken=meds.filter(m=>log[m.id]==='taken').length;
+ return `
+ <header class="top"><div class="hello"><div class="avatar">${esc(S.name[0]).toUpperCase()}</div><div><small>${t(g)} 👋</small><h1>${esc(S.name)}</h1></div></div>
+  <div class="top-actions"><button class="icon-btn ta" onclick="toggleLang()" aria-label="Language">${S.lang==='en'?'அ':'A'}</button><button class="icon-btn" onclick="openNotifs()" aria-label="Notifications">${ic('bell',20)}<i class="dot"></i></button><button class="icon-btn sos" onclick="openPage('emergency')">SOS</button></div></header>
+ <section class="hero tap" onclick="go('baby')"><span class="blob b1"></span><span class="blob b2"></span>
+  <div class="hero-top"><div class="ring"><svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="52" class="ring-bg"/><circle cx="60" cy="60" r="52" class="ring-fg" id="ringFg" stroke-dasharray="326.7" stroke-dashoffset="326.7"/></svg><div class="ring-txt"><b>${p.week}</b><span>${t('weeks')}</span></div></div>
+   <div class="hero-info"><span class="chip-glass">${p.tri}${['st','nd','rd'][p.tri-1]} ${t('tri')}</span><h2>${p.week} weeks, ${p.day} day${p.day===1?'':'s'}</h2><p>${t('sizeOf')} <b>${w.name}</b></p></div>
+   <div class="fruit-float">${w.e}</div></div>
+  <div class="hero-stats"><div><small>Due date</small><b>${fmt(p.edd,{day:'numeric',month:'short'})}</b></div><div><small>${t('daysLeft')}</small><b>${p.left}</b></div><div><small>Progress</small><b>${p.pct}%</b></div></div>
+  <div class="hero-bar"><i id="heroBar"></i></div></section>
+ <div class="h-sec"><h3>${t('quick')}</h3></div>
+ <div class="quick">
+  <button class="q" onclick="openPage('kick')"><span class="c-blush">${ic('foot')}</span>${t('kick')}</button>
+  <button class="q" onclick="openPage('food')"><span class="c-sage">${ic('food')}</span>Food guide</button>
+  <button class="q" onclick="openPage('meds')"><span class="c-amber">${ic('pill')}</span>${t('meds')}</button>
+  <button class="q" onclick="openPage('chat')"><span class="c-lav">${ic('spark')}</span>${t('ask')}</button></div>
+ <div class="h-sec"><h3>${t('todayMeds')}</h3><a onclick="openPage('meds')">${taken}/${meds.length} taken</a></div>
+ <div class="card">${meds.map(m=>medRow(m,log[m.id])).join('')||'<p class="muted small">No medicines added.</p>'}</div>
+ <div class="h-sec"><h3>${t('hydration')}</h3></div>
+ <div class="card water-card"><div class="glass"><div class="water" id="water"></div></div>
+  <div class="grow"><div class="big-num"><span id="wN">${S.water.n}</span><small> / ${S.waterGoal} glasses</small></div><p class="small muted" id="wL">${(S.water.n*.25).toFixed(2)} L of ${(S.waterGoal*.25).toFixed(1)} L today</p>
+   <div class="wctl"><button class="wbtn" onclick="water(-1)" aria-label="Remove glass">${ic('minus',18,2.4)}</button><button class="wbtn" style="background:var(--sky-ink);color:#fff;flex:1;width:auto;gap:6px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px" onclick="water(1)">${ic('plus',18,2.4)} Add glass</button></div></div></div>
+ <div class="h-sec"><h3>${t('nextAppt')}</h3><a onclick="openPage('appts')">${t('seeAll')}</a></div>
+ ${next?apptCard(next):`<div class="card"><p class="muted small">No upcoming appointments.</p></div>`}
+ <div class="h-sec"><h3>${t('meals')}</h3><a onclick="go('care')">${t('seeAll')}</a></div>
+ <div class="hscroll">${MEALS[S.diet].map(m=>`<div class="meal"><div class="e">${m[0]}</div><small>${m[1]}</small><p>${m[2]}</p></div>`).join('')}</div>
+ <div class="h-sec"><h3>${t('checklist')}</h3><span class="small muted" id="ckCount">${S.check.done.length}/${CHECKS.length}</span></div>
+ <div class="card" id="checklist">${CHECKS.map((c,i)=>`<div class="check-item ${S.check.done.includes(i)?'on':''}" onclick="toggleCheck(${i},this)"><button class="chk ${S.check.done.includes(i)?'on':''}">${ic('check',15,3)}</button><span>${c}</span></div>`).join('')}</div>
+ <div class="h-sec"><h3>${t('tip')}</h3></div>
+ <div class="card tip"><b style="font-size:14.5px">Week ${p.week}</b><p class="small" style="color:var(--ink2);margin-top:6px;line-height:1.55;max-width:85%">${devFor(clamp(p.week,4,40))[2][0]}</p></div>
+ <div style="margin-top:14px" class="alert-card tap" onclick="openPage('emergency')"><div class="ico">${ic('alert')}</div><div class="grow"><b>${t('warn')}</b><small style="display:block;margin-top:2px">${t('warnSub')}</small></div>${ic('chev',20)}</div>
+ <p class="small muted" style="text-align:center;margin-top:22px;line-height:1.5">Amma provides educational information only.<br>Always follow your doctor's advice.</p>`;
+};
+after.home=()=>{const p=preg();requestAnimationFrame(()=>requestAnimationFrame(()=>{const r=$('#ringFg');if(r)r.style.strokeDashoffset=326.7*(1-p.pct/100);const b=$('#heroBar');if(b)b.style.width=p.pct+'%';fillWater()}))};
+
+function medRow(m,st){return `<div class="rowi"><div class="ico ${m.c}">${ic('pill',20)}</div><div class="grow"><b>${esc(m.name)}</b><small>${esc(m.note||m.dose)}</small></div><span class="timepill">${t12(m.time)}</span>
+ <button class="chk ${st==='taken'?'on':st==='skipped'?'skip':''}" onclick="medToggle(${m.id})" aria-label="Mark taken">${st==='skipped'?ic('x',15,3):ic('check',15,3)}</button></div>`}
+function apptCard(a){const d=parse(a.d), n=Math.round((d-today())/DAY);
+ return `<div class="card appt tap" onclick="openPage('appts')"><div class="datebox"><b>${d.getDate()}</b><small>${fmt(d,{month:'short'})}</small></div>
+ <div class="grow"><b style="font-size:15px">${esc(a.title)}</b><small class="muted" style="display:block;margin-top:3px">${esc(a.doc)} · ${t12(a.time)}</small>
+ <span class="tag c-lav" style="margin-top:8px">${ic('clock',12)} ${n===0?'Today':n===1?'Tomorrow':'In '+n+' days'}</span></div>${ic('chev',20)}</div>`}
+
+R.baby=()=>{const p=preg(), cw=clamp(p.week,4,40), vw=S.viewWeek||cw;
+ return `<header class="top"><div><small>Pregnancy journey</small><h1>Your baby</h1></div><button class="icon-btn" onclick="openPage('kick')" aria-label="Kick counter">${ic('foot',20)}</button></header>
+ <div class="weeks" id="weeks">${Array.from({length:37},(_,i)=>i+4).map(w=>`<button class="wk ${w===vw?'on':''} ${w===cw?'now':''}" onclick="pickWeek(${w})"><small>${w===cw?'Now':'Wk'}</small>${w}</button>`).join('')}</div>
+ <div id="babyMain">${babyMain(vw)}</div>
+ <div class="card tap" style="margin-top:14px;display:flex;gap:14px;align-items:center" onclick="openPage('kick')"><div class="ico c-blush">${ic('foot')}</div><div class="grow"><b style="font-size:15px">Baby movement tracker</b><small class="muted" style="display:block;margin-top:2px">Last session: ${S.kicks[0]?S.kicks[0].n+' movements in '+S.kicks[0].m+' min':'none yet'}</small></div>${ic('chev',20)}</div>
+ <div class="h-sec"><h3>Milestones</h3></div>
+ <div class="card timeline">${[[12,'End of first trimester','Risk of many early complications drops'],[18,'Anomaly scan window','Usually between 18–22 weeks'],[24,'Glucose screening window','Commonly between 24–28 weeks'],[28,'Third trimester begins','Visits may become more frequent'],[35,'Hospital bag ready','Keep documents and essentials packed'],[37,'Early term','Baby is getting ready to meet you'],[40,'Due date',fmt(p.edd)]].map(m=>`<div class="tl ${p.week>m[0]?'done':p.week>=m[0]-1&&p.week<=m[0]+3?'now':''}"><span class="node">${p.week>m[0]?ic('check',12,3.5):''}</span><div><b>Week ${m[0]} · ${m[1]}</b><small>${m[2]}</small></div></div>`).join('')}</div>
+ <p class="small muted" style="text-align:center;margin-top:16px">Sizes are approximate averages. Every baby grows at their own pace.</p>`};
+after.baby=()=>{const el=document.querySelector('.wk.on');if(el){const c=$('#weeks');c.style.scrollBehavior='auto';c.scrollLeft=el.offsetLeft-c.offsetWidth/2+el.offsetWidth/2;c.style.scrollBehavior=''}};
+let segI=0;
+function babyMain(w){const d=wk(w), info=devFor(w);
+ return `<div class="fruit-stage"><div class="fruit-orb"><span class="orb-ring r2"></span><span class="orb-ring r1"></span><div class="fruit-big">${d.e}</div></div>
+  <p class="fruit-cap">Week ${w} · about the size of a</p><h2 class="fruit-name">${d.name}</h2>
+  <div class="measure"><div><small>Length</small><b>${d.l}</b></div><div><small>Weight</small><b>${d.g}</b></div><div><small>Trimester</small><b>${triOf(w)}</b></div></div></div>
+ <div class="segment" id="seg"><i class="seg-ind" style="transform:translateX(${segI*100}%)"></i>${['Baby','Mother','Tips'].map((s,i)=>`<button class="${i===segI?'on':''}" onclick="seg(${i})">${s}</button>`).join('')}</div>
+ <div class="card seg-body" id="segBody"><ul class="bullets">${info[segI].map(x=>`<li>${x}</li>`).join('')}</ul></div>`}
+function pickWeek(w){S.viewWeek=w;save();document.querySelectorAll('.wk').forEach(b=>b.classList.toggle('on',+b.lastChild.textContent===w));
+ const m=$('#babyMain');m.innerHTML=babyMain(w);m.classList.remove('pop');void m.offsetWidth;m.classList.add('pop');
+ const el=document.querySelector('.wk.on');const c=$('#weeks');c.scrollTo({left:el.offsetLeft-c.offsetWidth/2+el.offsetWidth/2,behavior:'smooth'})}
+function seg(i){segI=i;const w=S.viewWeek||clamp(preg().week,4,40);document.querySelectorAll('#seg button').forEach((b,j)=>b.classList.toggle('on',j===i));
+ document.querySelector('.seg-ind').style.transform=`translateX(${i*100}%)`;const b=$('#segBody');b.innerHTML=`<ul class="bullets">${devFor(w)[i].map(x=>`<li>${x}</li>`).join('')}</ul>`;b.classList.remove('fade');void b.offsetWidth;b.classList.add('fade')}
+
+R.care=()=>{const log=S.medLog[iso(today())]||{};const taken=S.meds.filter(m=>log[m.id]==='taken').length;const next=S.appts.filter(a=>!a.done&&parse(a.d)>=today()).length;
+ return `<header class="top"><div><small>Everything for you</small><h1>Care</h1></div><button class="icon-btn" onclick="openPage('health')" aria-label="Log health">${ic('plus',20)}</button></header>
+ <div class="tiles">
+  <button class="tile tap c-sage" onclick="openPage('food')"><span class="ti">${ic('food')}</span><div><b>Food & nutrition</b><small>What to eat, limit, avoid</small></div></button>
+  <button class="tile tap c-amber" onclick="openPage('meds')"><span class="ti">${ic('pill')}</span><div><b>Medicines</b><small>${taken} of ${S.meds.length} taken today</small></div></button>
+  <button class="tile tap c-lav" onclick="openPage('appts')"><span class="ti">${ic('cal')}</span><div><b>Checkups</b><small>${next} upcoming</small></div></button>
+  <button class="tile tap c-blush" onclick="openPage('health')"><span class="ti">${ic('heart')}</span><div><b>Health tracker</b><small>Weight, BP, mood</small></div></button>
+  <button class="tile tap c-sky" onclick="openPage('exercise')"><span class="ti">${ic('walk')}</span><div><b>Exercise</b><small>Safe activity & breathing</small></div></button>
+  <button class="tile tap c-peach" onclick="openPage('bag')"><span class="ti">${ic('bag')}</span><div><b>Hospital bag</b><small>${bagPct()}% packed</small></div></button>
+ </div>
+ <div class="h-sec"><h3>${t('meals')}</h3><span class="badge b-rec">${S.diet==='veg'?'Vegetarian':S.diet==='egg'?'Eggetarian':'Non-veg'}</span></div>
+ <div class="card">${MEALS[S.diet].map(m=>`<div class="rowi"><div class="ico" style="background:var(--bg)">${m[0]}</div><div class="grow"><small style="margin:0;color:var(--primary);font-weight:700;text-transform:uppercase;font-size:11px;letter-spacing:.5px">${m[1]}</small><b style="margin-top:2px">${m[2]}</b></div></div>`).join('')}</div>
+ <div class="h-sec"><h3>Food spotlight</h3><a onclick="openPage('food')">${t('seeAll')}</a></div>
+ <div class="hscroll">${[0,1,12,17].map(i=>{const f=FOODS[i];return `<div class="meal tap" style="cursor:pointer" onclick="foodSheet(${i})"><div class="e">${f.e}</div><p style="margin-top:8px">${f.n}</p><span class="badge ${CLS[f.s][1]}" style="display:inline-block;margin-top:8px">${CLS[f.s][0]}</span></div>`}).join('')}</div>`};
+
+R.learn=()=>`<header class="top"><div><small>Learning centre</small><h1>Learn</h1></div><button class="icon-btn" onclick="openPage('chat')" aria-label="Ask Amma">${ic('chat',20)}</button></header>
+ <div class="ai-hero tap" onclick="openPage('chat')"><span class="ai-orb"></span><span class="chip-glass">${ic('spark',12)} AI ASSISTANT</span><h3>Ask Amma anything</h3><p>Food, symptoms, scan terms, questions for your doctor — in English or Tamil.</p>
+  <div class="ai-ask">${ic('chat',18)} Can I eat papaya during pregnancy?</div></div>
+ <div class="h-sec"><h3>Articles for you</h3></div>
+ <div class="chips" id="artChips">${['All','Pregnancy basics','Nutrition','Medical checkups','Baby development','Mental wellness','Labour & delivery'].map((c,i)=>`<button class="chip ${i===0?'on':''}" onclick="artFilter(this,'${c}')">${c}</button>`).join('')}</div>
+ <div id="artList" style="margin-top:12px">${artList('All')}</div>
+ <div class="h-sec"><h3>Myth or fact?</h3><span class="small muted">Tap to flip</span></div>
+ <div class="hscroll">${MYTHS.map(m=>`<div class="flip" onclick="this.classList.toggle('on')"><div class="flip-in"><div class="face front"><small style="color:#B05A34">❌ Myth</small><p>${m[0]}</p><span class="small muted">Tap to reveal →</span></div><div class="face back"><small style="color:var(--sage-ink)">✅ Fact</small><p style="font-size:13px">${m[1]}</p></div></div></div>`).join('')}</div>
+ <div class="h-sec"><h3>Frequently asked</h3></div>
+ ${FAQ.map(f=>`<div class="acc"><button class="acc-h" onclick="this.parentNode.classList.toggle('on')">${f[0]}${ic('chev',18)}</button><div class="acc-b"><div><p>${f[1]}</p></div></div></div>`).join('')}`;
+const artList=c=>ARTICLES.map((a,i)=>[a,i]).filter(([a])=>c==='All'||a.c===c).map(([a,i])=>`<div class="article tap" onclick="openPage('article',${i})"><div class="thumb ${a.bg}">${a.e}</div><div class="grow"><small style="color:var(--primary);font-weight:700">${a.c}</small><b style="margin:3px 0">${a.title}</b><small>${a.min} min read · ✔ Review pending</small></div></div>`).join('');
+function artFilter(b,c){document.querySelectorAll('#artChips .chip').forEach(x=>x.classList.toggle('on',x===b));const l=$('#artList');l.innerHTML=artList(c);stagger(l)}
+
+R.profile=()=>{const p=preg();
+ return `<header class="top"><div><small>Account</small><h1>Profile</h1></div><button class="icon-btn" onclick="openPage('settings')" aria-label="Settings">${ic('sliders',20)}</button></header>
+ <div class="prof"><div class="avatar">${esc(S.name[0]).toUpperCase()}</div><h2>${esc(S.name)}</h2><p class="small muted" style="margin-top:4px">Due ${fmt(p.edd)} · Singleton pregnancy</p>
+  <div class="pstats"><div><b>${p.week}w ${p.day}d</b><small>Gestation</small></div><div><b>${p.tri}${['st','nd','rd'][p.tri-1]}</b><small>Trimester</small></div><div><b>${p.left}</b><small>Days to go</small></div></div></div>
+ <div class="h-sec"><h3>My pregnancy</h3></div>
+ <div class="menu">
+  ${mi('c-blush','heart','Pregnancy profile',"openPage('pregnancy')")}
+  ${mi('c-sky','file','Medical report vault',"openPage('reports')")}
+  ${mi('c-sage','users','Family sharing',"openPage('family')")}
+  ${mi('c-red','phone','Emergency contacts',"openPage('emergency')")}</div>
+ <div class="h-sec"><h3>Preferences</h3></div>
+ <div class="menu">
+  ${mi('c-lav','globe','Language · '+(S.lang==='en'?'English':'தமிழ்'),'toggleLang()')}
+  ${mi('c-amber','bell','Notifications',"openPage('settings')")}
+  ${mi('c-sage','shield','Privacy & consent',"openPage('settings')")}
+  ${mi('c-peach','logout','Reset demo data','resetDemo()')}</div>
+ <div class="plus-card tap" style="margin-top:18px" onclick="toast('Amma Plus — coming soon ✨')"><div class="ico" style="background:rgba(255,255,255,.12);color:#FFD27A">${ic('crown')}</div><div class="grow"><b>Amma Plus</b><small>Personal meal plans, report explanations & family features. Safety information is always free.</small></div></div>
+ <p class="small muted" style="text-align:center;margin-top:20px">Amma v1.0 · Prototype</p>`};
+const mi=(c,i,l,fn)=>`<button class="mi" onclick="${fn}"><span class="ico ${c}">${ic(i,19)}</span><b>${l}</b><span class="chev">${ic('chev',18)}</span></button>`;
+
+/* ================= Actions ================= */
+function water(d){S.water.n=clamp(S.water.n+d,0,20);save();$('#wN').textContent=S.water.n;$('#wL').textContent=`${(S.water.n*.25).toFixed(2)} L of ${(S.waterGoal*.25).toFixed(1)} L today`;fillWater();
+ if(d>0&&S.water.n===S.waterGoal)toast('💧 Daily water goal reached!');navigator.vibrate&&navigator.vibrate(8)}
+function fillWater(){const w=$('#water');if(w)w.style.height=Math.min(100,S.water.n/S.waterGoal*100)+'%'}
+function medToggle(id){const td=iso(today());const log=S.medLog[td]||(S.medLog[td]={});log[id]=log[id]==='taken'?undefined:'taken';if(!log[id])delete log[id];save();
+ if(log[id])toast('✅ Marked as taken');refreshAll()}
+function medSet(id,st){const td=iso(today());const log=S.medLog[td]||(S.medLog[td]={});if(log[id]===st)delete log[id];else log[id]=st;save();toast(st==='taken'?'✅ Marked as taken':'Marked as skipped');refreshAll()}
+function toggleCheck(i,el){const d=S.check.done;const k=d.indexOf(i);k>-1?d.splice(k,1):d.push(i);save();el.classList.toggle('on');el.querySelector('.chk').classList.toggle('on');
+ $('#ckCount').textContent=`${d.length}/${CHECKS.length}`;if(d.length===CHECKS.length)toast('🎉 All done for today!')}
+function toggleLang(){S.lang=S.lang==='en'?'ta':'en';save();buildNav();renderTab(true);toast(S.lang==='ta'?'மொழி: தமிழ்':'Language: English')}
+function resetDemo(){sheet(`<h3>Reset demo data?</h3><p class="small muted" style="margin:8px 0 18px;line-height:1.5">This clears everything saved in this browser and restarts onboarding.</p>
+ <button class="btn danger block" onclick="try{localStorage.removeItem(KEY)}catch(e){};location.reload()">Reset</button><button class="btn ghost block" style="margin-top:10px" onclick="closeSheet()">Cancel</button>`)}
+function refreshAll(){renderTab(false);document.querySelectorAll('.page').forEach(p=>rerender(p))}
+
+/* ================= Pages ================= */
+const PAGES={};
+function openPage(key,arg){const def=PAGES[key](arg);const el=document.createElement('section');el.className='page'+(def.cls?' '+def.cls:'');el.dataset.key=key;if(arg!==undefined)el.dataset.arg=arg;
+ el.innerHTML=`<header class="phead"><button class="icon-btn" onclick="closePage()" aria-label="Back">${ic('back',20)}</button><h2>${def.title}</h2>${def.right||''}</header><div class="pbody ${def.cls?'':'scroll'}">${def.body}</div>`;
+ $('#pages').appendChild(el);$('#pageDim').classList.add('on');
+ requestAnimationFrame(()=>requestAnimationFrame(()=>el.classList.add('open')));if(!def.cls)stagger(el.querySelector('.pbody'));def.mount&&def.mount(el)}
+function closePage(){const ps=$('#pages').children, el=ps[ps.length-1];if(!el)return;el.classList.remove('open');el.classList.add('closing');
+ if(el.dataset.key==='kick')stopKickTimer();setTimeout(()=>{el.remove();if(!$('#pages').children.length)$('#pageDim').classList.remove('on')},480)}
+function rerender(el){const key=el.dataset.key;if(['chat','kick','article'].includes(key))return;const def=PAGES[key](el.dataset.arg);const b=el.querySelector('.pbody');const st=b.scrollTop;b.innerHTML=def.body;b.scrollTop=st;def.mount&&def.mount(el)}
+
+/* Food */
+let fFilter='all',fQuery='';
+PAGES.food=()=>({title:'Food & nutrition',body:`
+ <div class="search">${ic('search',19)}<input placeholder="Search foods, e.g. papaya, ragi…" oninput="fQuery=this.value;renderFoods()" value="${esc(fQuery)}"></div>
+ <div class="chips" id="fChips">${[['all','All'],['rec','Recommended'],['safe','Safe if cooked'],['limit','Limit'],['avoid','Avoid'],['consult','Ask doctor']].map(([k,l])=>`<button class="chip ${fFilter===k?'on':''}" onclick="fFilter='${k}';document.querySelectorAll('#fChips .chip').forEach(c=>c.classList.toggle('on',c===this));renderFoods()">${l}</button>`).join('')}</div>
+ <div id="foodList" style="margin-top:12px">${foodList()}</div>
+ <div class="review-note" style="margin-top:6px">${ic('info',16)}<span>Sample guidance for the prototype. Final food content must be reviewed by qualified medical/nutrition professionals.</span></div>`});
+function foodList(){const q=fQuery.toLowerCase();const list=FOODS.map((f,i)=>[f,i]).filter(([f])=>(fFilter==='all'||f.s===fFilter)&&(!q||(f.n+f.ta+f.c).toLowerCase().includes(q)));
+ return list.map(([f,i])=>`<div class="food tap" onclick="foodSheet(${i})"><div class="ico">${f.e}</div><div class="grow"><b style="font-size:14.5px">${f.n}</b><div class="ta">${f.ta}</div><small class="muted" style="font-size:12px">${f.nut}</small></div><span class="badge ${CLS[f.s][1]}">${CLS[f.s][0]}</span></div>`).join('')||`<div class="card" style="text-align:center"><div style="font-size:40px">🔍</div><p class="small muted" style="margin-top:6px">No foods found. Try asking Amma.</p></div>`}
+function renderFoods(){const l=$('#foodList');if(!l)return;l.innerHTML=foodList();stagger(l)}
+function foodSheet(i){const f=FOODS[i];sheet(`<div style="text-align:center"><div style="font-size:64px;animation:popIn .6s var(--spring)">${f.e}</div><h3 style="margin-top:6px">${f.n}</h3><p class="small muted ta">${f.ta} · ${f.c}</p>
+ <span class="badge ${CLS[f.s][1]}" style="display:inline-block;margin-top:10px;font-size:12px;padding:6px 12px">${CLS[f.s][0]}</span></div>
+ ${f.nut!=='—'?`<div class="card" style="margin-top:18px"><small class="muted" style="font-weight:700">NUTRIENTS</small><p style="margin-top:4px;font-weight:600">${f.nut}</p></div>`:''}
+ ${f.ben!=='—'?`<div class="card"><small style="color:var(--sage-ink);font-weight:700">✓ BENEFITS</small><p class="small" style="margin-top:4px;line-height:1.55">${f.ben}</p></div>`:''}
+ ${f.prep!=='—'?`<div class="card"><small style="color:var(--sky-ink);font-weight:700">🍳 HOW TO HAVE IT</small><p class="small" style="margin-top:4px;line-height:1.55">${f.prep}</p></div>`:''}
+ <div class="card"><small style="color:var(--amber-ink);font-weight:700">⚠ PRECAUTIONS</small><p class="small" style="margin-top:4px;line-height:1.55">${f.care}</p></div>
+ <div class="review-note" style="margin-top:12px">${ic('info',16)}<span>Pending medical review · If you have allergies or a medical condition, ask your doctor.</span></div>`)}
+
+/* Medicines */
+PAGES.meds=()=>{const log=S.medLog[iso(today())]||{};const meds=[...S.meds].sort((a,b)=>a.time.localeCompare(b.time));const tk=meds.filter(m=>log[m.id]==='taken').length;const pct=meds.length?Math.round(tk/meds.length*100):0;
+ const slot=t=>{const h=+t.split(':')[0];return h<12?'Morning':h<16?'Afternoon':h<20?'Evening':'Bedtime'};
+ const groups={};meds.forEach(m=>(groups[slot(m.time)]=groups[slot(m.time)]||[]).push(m));
+ return {title:'Medicines',right:`<button class="icon-btn" onclick="addMedSheet()" aria-label="Add medicine">${ic('plus',20)}</button>`,body:`
+ <div class="card" style="display:flex;align-items:center;gap:16px;background:linear-gradient(135deg,#fff,var(--amber))"><div class="ring" style="width:76px;height:76px"><svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="52" style="stroke:#F3E0BE"/><circle cx="60" cy="60" r="52" style="stroke:var(--amber-ink);transition:stroke-dashoffset 1s var(--ease)" stroke-dasharray="326.7" stroke-dashoffset="${326.7*(1-pct/100)}"/></svg><div class="ring-txt"><b style="font-family:inherit;font-size:20px;color:var(--amber-ink)">${pct}%</b></div></div>
+  <div><b style="font-size:16px">${tk} of ${meds.length} taken today</b><p class="small muted" style="margin-top:4px">${fmt(today(),{weekday:'long',day:'numeric',month:'short'})}</p></div></div>
+ <div class="info" style="margin-top:12px">${ic('shield',18)}<span>Only add medicines prescribed by your doctor. Amma never suggests, changes or stops medicines.</span></div>
+ ${Object.entries(groups).map(([g,ms])=>`<div class="h-sec"><h3>${g}</h3></div><div class="card">${ms.map(m=>`<div class="rowi"><div class="ico ${m.c}">${ic('pill',20)}</div><div class="grow"><b>${esc(m.name)}</b><small>${esc(m.dose)}</small><small>${t12(m.time)} · ${esc(m.note||'')}</small>
+   <div style="display:flex;gap:8px;margin-top:10px"><button class="btn sm ${log[m.id]==='taken'?'':'ghost'}" style="${log[m.id]==='taken'?'background:var(--sage-ink);box-shadow:none':''}" onclick="medSet(${m.id},'taken')">${ic('check',15,2.6)} ${log[m.id]==='taken'?'Taken':'Take'}</button><button class="btn sm soft" style="${log[m.id]==='skipped'?'background:var(--amber);color:var(--amber-ink)':''}" onclick="medSet(${m.id},'skipped')">${log[m.id]==='skipped'?'Skipped':'Skip'}</button></div></div></div>`).join('')}</div>`).join('')}
+ <div class="h-sec"><h3>Refills & prescriptions</h3></div>
+ <div class="card tap" style="display:flex;gap:14px;align-items:center" onclick="openPage('reports')"><div class="ico c-sky">${ic('upload',20)}</div><div class="grow"><b style="font-size:14.5px">Upload prescription</b><small class="muted" style="display:block">Keep it safe in your report vault</small></div>${ic('chev',20)}</div>`}};
+function addMedSheet(){sheet(`<h3>Add prescribed medicine</h3><p class="small muted" style="margin-top:4px">Enter exactly as written on your prescription.</p>
+ <label class="label">Medicine name</label><input class="field" id="mName" placeholder="e.g. Iron + Folic acid">
+ <label class="label">Dosage (as prescribed)</label><input class="field" id="mDose" placeholder="e.g. 1 tablet">
+ <div class="row2"><div><label class="label">Time</label><input class="field" type="time" id="mTime" value="09:00"></div><div><label class="label">Ends on</label><input class="field" type="date" id="mEnd"></div></div>
+ <label class="label">Instructions</label><input class="field" id="mNote" placeholder="e.g. After food">
+ <button class="btn block" style="margin-top:20px" onclick="saveMed()">Save reminder</button>`)}
+function saveMed(){const n=$('#mName').value.trim();if(!n)return toast('Please enter the medicine name');const cs=['c-sage','c-red','c-sky','c-lav','c-amber','c-peach'];
+ S.meds.push({id:Date.now(),name:n,dose:($('#mDose').value.trim()||'As prescribed')+' · as prescribed',time:$('#mTime').value||'09:00',note:$('#mNote').value.trim(),c:cs[S.meds.length%cs.length]});save();closeSheet();refreshAll();toast('🔔 Reminder added')}
+
+/* Appointments */
+let apTab=0;
+PAGES.appts=()=>{const up=S.appts.filter(a=>!a.done).sort((a,b)=>a.d.localeCompare(b.d)), past=S.appts.filter(a=>a.done).sort((a,b)=>b.d.localeCompare(a.d));const list=apTab?past:up;
+ return {title:'Checkups',right:`<button class="icon-btn" onclick="addApptSheet()" aria-label="Add appointment">${ic('plus',20)}</button>`,body:`
+ <div class="segment" style="grid-template-columns:1fr 1fr;margin-top:0"><i class="seg-ind" style="width:calc((100% - 8px)/2);transform:translateX(${apTab*100}%)"></i><button class="${apTab?'':'on'}" onclick="apTab=0;rerender(this.closest('.page'))">Upcoming (${up.length})</button><button class="${apTab?'on':''}" onclick="apTab=1;rerender(this.closest('.page'))">Completed (${past.length})</button></div>
+ ${list.map(a=>{const d=parse(a.d);return `<div class="card"><div class="appt"><div class="datebox" style="${a.done?'background:linear-gradient(160deg,#8EA89B,#B8CCC1);box-shadow:none':''}"><b>${d.getDate()}</b><small>${fmt(d,{month:'short'})}</small></div>
+  <div class="grow"><b style="font-size:15px">${esc(a.title)}</b><small class="muted" style="display:block;margin-top:3px">${esc(a.doc)}</small><small class="muted" style="display:block">${ic('pin',11)} ${esc(a.place)} · ${t12(a.time)}</small></div></div>
+  <p class="small" style="margin-top:12px;padding:10px 12px;border-radius:12px;background:var(--bg);color:var(--ink2)">${esc(a.purpose)}</p>
+  ${a.done?`<button class="btn sm soft" style="margin-top:10px" onclick="openPage('reports')">${ic('file',15)} View report</button>`:`<div style="display:flex;gap:8px;margin-top:10px"><button class="btn sm ghost" onclick="apptDone(${a.id})">${ic('check',15,2.6)} Mark done</button><button class="btn sm soft" onclick="toast('🔔 Reminder set for 1 day before')">${ic('bell',15)} Remind me</button></div>`}</div>`}).join('')||`<div class="card" style="text-align:center"><div style="font-size:40px">📅</div><p class="small muted">Nothing here yet.</p></div>`}
+ <div class="h-sec"><h3>Typical checkups</h3></div>
+ <div class="card">${[['Dating scan','Early pregnancy'],['First trimester screening','Around 11–14 weeks'],['Anomaly scan','Around 18–22 weeks'],['Glucose screening','Around 24–28 weeks'],['Third trimester assessments','From 28 weeks']].map(x=>`<div class="rowi"><div class="ico c-lav">${ic('clip',19)}</div><div class="grow"><b>${x[0]}</b><small>${x[1]}</small></div></div>`).join('')}
+ <p class="small muted" style="margin-top:10px;line-height:1.5">Your schedule depends on your health and your doctor's advice.</p></div>`}};
+function apptDone(id){const a=S.appts.find(x=>x.id===id);a.done=true;save();refreshAll();toast('✅ Appointment completed')}
+function addApptSheet(){sheet(`<h3>New appointment</h3>
+ <label class="label">Title</label><input class="field" id="aT" placeholder="e.g. Growth scan">
+ <label class="label">Doctor / Lab</label><input class="field" id="aD" placeholder="Doctor name">
+ <label class="label">Hospital</label><input class="field" id="aP" placeholder="Hospital name">
+ <div class="row2"><div><label class="label">Date</label><input class="field" type="date" id="aDt" value="${iso(addDays(today(),7))}" min="${iso(today())}"></div><div><label class="label">Time</label><input class="field" type="time" id="aTm" value="10:00"></div></div>
+ <label class="label">Purpose</label><input class="field" id="aPu" placeholder="What is this visit for?">
+ <button class="btn block" style="margin-top:20px" onclick="saveAppt()">Save appointment</button>`)}
+function saveAppt(){const t=$('#aT').value.trim();if(!t||!$('#aDt').value)return toast('Please add a title and date');S.appts.push({id:Date.now(),title:t,doc:$('#aD').value.trim()||'—',place:$('#aP').value.trim()||'—',d:$('#aDt').value,time:$('#aTm').value||'10:00',purpose:$('#aPu').value.trim()||'Antenatal visit',done:false});save();apTab=0;closeSheet();refreshAll();toast('📅 Appointment saved')}
+
+/* Health */
+PAGES.health=()=>{const w=S.weights, last=w[w.length-1], bp=S.bp[S.bp.length-1];
+ const SYM=['Nausea','Headache','Back pain','Swelling','Fatigue','Heartburn','Leg cramps','Poor sleep'];
+ return {title:'Health tracker',right:`<button class="icon-btn" onclick="logSheet()" aria-label="Log reading">${ic('plus',20)}</button>`,body:`
+ <div class="mini"><div><small>${ic('scale',14)} Weight</small><b>${last[1]} <span>kg</span></b></div><div><small>${ic('heart',14)} Blood pressure</small><b>${bp.s}/${bp.di} <span>mmHg</span></b></div>
+  <div><small>${ic('moon',14)} Sleep</small><b>${S.sleep} <span>hrs</span></b></div><div><small>${ic('drop',14)} Water</small><b>${S.water.n} <span>glasses</span></b></div></div>
+ <div class="h-sec"><h3>Weight journey</h3><span class="small muted">kg by week</span></div>
+ <div class="card">${weightChart()}</div>
+ <div class="h-sec"><h3>How are you feeling?</h3></div>
+ <div class="card"><div class="moods">${['😣','😕','😐','🙂','😊'].map((m,i)=>`<button class="${S.mood===i?'on':''}" onclick="S.mood=${i};save();rerender(this.closest('.page'));toast('Mood saved')">${m}</button>`).join('')}</div></div>
+ <div class="h-sec"><h3>Symptoms today</h3></div>
+ <div class="card"><div class="choice" style="gap:8px">${SYM.map(s=>`<button style="flex:none;min-width:0;padding:9px 13px" class="${S.symptoms.includes(s)?'on':''}" onclick="toggleSym('${s}',this)">${s}</button>`).join('')}</div>
+  <div class="info warn" style="margin-top:14px">${ic('alert',18)}<span>A <b>severe</b> headache, vision changes or <b>sudden</b> swelling can be warning signs. Contact your doctor right away.</span></div></div>
+ <div class="h-sec"><h3>Blood pressure log</h3></div>
+ <div class="card">${[...S.bp].reverse().map(b=>`<div class="rowi"><div class="ico c-blush">${ic('heart',19)}</div><div class="grow"><b>${b.s}/${b.di} mmHg</b><small>${fmt(parse(b.d),{day:'numeric',month:'short'})}</small></div></div>`).join('')}</div>
+ <p class="small muted" style="text-align:center;margin-top:14px;line-height:1.5">Amma records your readings for you and your doctor.<br>It does not diagnose any condition.</p>`}};
+function weightChart(){const w=S.weights;if(w.length<2)return '<p class="small muted">Add at least two readings.</p>';const W=320,H=140,px=24,py=18;
+ const xs=w.map(p=>p[0]),ys=w.map(p=>p[1]);const x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys)-1,y1=Math.max(...ys)+1;
+ const X=v=>px+(v-x0)/(x1-x0||1)*(W-px*2),Y=v=>H-py-(v-y0)/(y1-y0)*(H-py*2);
+ const pts=w.map(p=>`${X(p[0]).toFixed(1)},${Y(p[1]).toFixed(1)}`);
+ return `<svg class="chart" viewBox="0 0 ${W} ${H}"><defs><linearGradient id="wg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C2497A" stop-opacity=".28"/><stop offset="1" stop-color="#C2497A" stop-opacity="0"/></linearGradient></defs>
+ ${[0,1,2].map(i=>`<line x1="${px}" x2="${W-px}" y1="${py+i*(H-py*2)/2}" y2="${py+i*(H-py*2)/2}" stroke="#F1E6E9" stroke-dasharray="3 4"/>`).join('')}
+ <path class="area" d="M${pts.join(' L')} L${X(x1)},${H-py} L${X(x0)},${H-py}Z" fill="url(#wg)"/>
+ <polyline class="draw" points="${pts.join(' ')}" fill="none" stroke="#C2497A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+ ${w.map((p,i)=>`<circle cx="${X(p[0])}" cy="${Y(p[1])}" r="${i===w.length-1?5:3.5}" fill="#fff" stroke="#C2497A" stroke-width="2.5" style="opacity:0;animation:fadeIn .3s ${.3+i*.18}s forwards"/><text x="${X(p[0])}" y="${H-2}" font-size="9.5" fill="#9A8893" text-anchor="middle">${p[0]}w</text>`).join('')}
+ <text x="${X(x1)}" y="${Y(w[w.length-1][1])-10}" font-size="11" font-weight="700" fill="#5E1F47" text-anchor="end">${w[w.length-1][1]} kg</text></svg>`}
+function toggleSym(s,b){const i=S.symptoms.indexOf(s);i>-1?S.symptoms.splice(i,1):S.symptoms.push(s);save();b.classList.toggle('on')}
+function logSheet(){const p=preg();sheet(`<h3>Log a reading</h3><p class="small muted" style="margin-top:4px">Week ${p.week} · ${fmt(today())}</p>
+ <label class="label">Weight (kg)</label><input class="field" type="number" step="0.1" inputmode="decimal" id="lW" placeholder="e.g. 59.4">
+ <label class="label">Blood pressure (mmHg)</label><div class="row2"><input class="field" type="number" inputmode="numeric" id="lS" placeholder="Systolic e.g. 110"><input class="field" type="number" inputmode="numeric" id="lD" placeholder="Diastolic e.g. 72"></div>
+ <label class="label">Sleep last night (hours)</label><input class="field" type="number" step="0.5" id="lSl" placeholder="e.g. 7.5">
+ <button class="btn block" style="margin-top:20px" onclick="saveLog()">Save</button>`)}
+function saveLog(){const p=preg(),w=parseFloat($('#lW').value),s=parseInt($('#lS').value),d=parseInt($('#lD').value),sl=parseFloat($('#lSl').value);let any=false,high=false;
+ if(w>20&&w<250){const i=S.weights.findIndex(x=>x[0]===p.week);i>-1?S.weights[i][1]=w:S.weights.push([p.week,w]);S.weights.sort((a,b)=>a[0]-b[0]);any=true}
+ if(s>50&&d>30){S.bp.push({d:iso(today()),s,di:d});any=true;high=s>=140||d>=90}
+ if(sl>0&&sl<24){S.sleep=sl;any=true}
+ if(!any)return toast('Please enter at least one value');save();closeSheet();refreshAll();
+ if(high)setTimeout(()=>sheet(`<div style="text-align:center"><div style="font-size:52px">🩺</div><h3 style="margin-top:6px">Please share this reading with your doctor</h3></div>
+  <p class="small" style="margin:12px 0;line-height:1.6;color:var(--ink2);text-align:center">Your reading of <b>${s}/${d}</b> is higher than the commonly used reference range. Amma cannot diagnose — please contact your doctor today.</p>
+  <div class="info warn">${ic('alert',18)}<span>If you also have a severe headache, vision changes, upper tummy pain or sudden swelling, seek medical care <b>immediately</b>.</span></div>
+  <button class="btn danger block" style="margin-top:16px" onclick="closeSheet();openPage('emergency')">${ic('phone',18)} Emergency options</button><button class="btn ghost block" style="margin-top:10px" onclick="closeSheet()">OK</button>`),600);
+ else toast('✅ Saved')}
+
+/* Kick counter */
+let kick={n:0,start:null,timer:null};
+PAGES.kick=()=>({title:'Baby movements',body:`
+ <div class="kick-wrap"><button class="kick-btn" id="kickBtn" onclick="kickTap(event)"><span class="wave"></span><span class="wave"></span><b id="kN">${kick.n}</b><small>Tap for each movement</small></button></div>
+ <div class="kstats"><div><b id="kT">${kick.start?elapsed():'00:00'}</b><small>Session time</small></div><div><b>${S.kicks[0]?S.kicks[0].n:'—'}</b><small>Last session</small></div></div>
+ <div style="display:flex;gap:10px;margin-top:14px"><button class="btn block" onclick="kickFinish()">Save session</button><button class="btn soft" onclick="kickReset()">Reset</button></div>
+ <div class="info" style="margin-top:16px">${ic('info',18)}<span>Every baby has their own pattern — there is no single right number. Get to know what is normal for <b>your</b> baby.</span></div>
+ <div class="info warn" style="margin-top:10px">${ic('alert',18)}<span>If movements <b>slow down, change or stop</b>, contact your maternity care team <b>right away</b>. Don't wait or rely on this counter.</span></div>
+ <div class="h-sec"><h3>Recent sessions</h3></div>
+ <div class="card" id="kHist">${kickHist()}</div>`,mount:()=>{if(kick.start)startKickTimer()}});
+const kickHist=()=>S.kicks.slice(0,6).map(k=>`<div class="rowi"><div class="ico c-blush">${ic('foot',19)}</div><div class="grow"><b>${k.n} movements</b><small>${fmt(parse(k.d),{weekday:'short',day:'numeric',month:'short'})} · ${t12(k.t)}</small></div><span class="timepill">${k.m} min</span></div>`).join('')||'<p class="small muted">No sessions yet.</p>';
+function elapsed(){const s=Math.floor((Date.now()-kick.start)/1000);return `${pad(Math.floor(s/60))}:${pad(s%60)}`}
+function startKickTimer(){stopKickTimer();kick.timer=setInterval(()=>{const e=$('#kT');if(e)e.textContent=elapsed()},1000)}
+function stopKickTimer(){clearInterval(kick.timer)}
+function kickTap(e){if(!kick.start){kick.start=Date.now();startKickTimer()}kick.n++;const n=$('#kN');n.textContent=kick.n;n.animate([{transform:'scale(1.35)'},{transform:'scale(1)'}],{duration:400,easing:'cubic-bezier(.34,1.45,.5,1)'});
+ navigator.vibrate&&navigator.vibrate(15);const b=$('#kickBtn');['💗','✨','👣','💕'].slice(0,3).forEach((em,i)=>{const s=document.createElement('span');s.className='burst';s.textContent=em;const a=Math.random()*Math.PI*2,r=90+Math.random()*30;
+ s.style.cssText=`left:50%;top:50%;--x:${Math.cos(a)*r}px;--y:${Math.sin(a)*r}px;animation-delay:${i*60}ms`;b.appendChild(s);setTimeout(()=>s.remove(),1200)})}
+function kickFinish(){if(!kick.n)return toast('Tap the circle when you feel a movement');const m=Math.max(1,Math.round((Date.now()-kick.start)/60000)),n=new Date();
+ S.kicks.unshift({d:iso(today()),t:`${pad(n.getHours())}:${pad(n.getMinutes())}`,n:kick.n,m});save();kickReset(true);toast('👣 Session saved');refreshAll()}
+function kickReset(silent){stopKickTimer();kick={n:0,start:null,timer:null};const n=$('#kN');if(n)n.textContent=0;const t=$('#kT');if(t)t.textContent='00:00';const h=$('#kHist');if(h)h.innerHTML=kickHist()}
+
+/* Exercise */
+PAGES.exercise=()=>({title:'Exercise & lifestyle',body:`
+ <div class="card tap" style="background:linear-gradient(135deg,var(--sage),#F2FAF5);display:flex;gap:14px;align-items:center" onclick="breathSheet()"><div class="ico" style="background:#fff;color:var(--sage-ink)">${ic('wind')}</div><div class="grow"><b style="font-size:15px">Calm breathing · 2 min</b><small class="muted" style="display:block;margin-top:2px">Relax your body and mind</small></div><span class="btn sm" style="background:var(--sage-ink);box-shadow:none">Start</span></div>
+ <div class="h-sec"><h3>Gentle activities</h3></div>
+ ${[['🚶‍♀️','Walking','20–30 min at an easy pace where you can still talk.','c-sky'],['🧘‍♀️','Prenatal yoga','Gentle stretches with a trained prenatal instructor.','c-lav'],['🌸','Pelvic floor exercises','Squeeze and hold for a few seconds, several times a day.','c-blush'],['🐈','Cat–cow stretch','Eases back aches. Move slowly with your breath.','c-peach'],['😴','Rest & side sleeping','Rest with feet up; sleep on your side in later pregnancy.','c-sage']].map(a=>`<div class="food"><div class="ico ${a[3]}">${a[0]}</div><div class="grow"><b style="font-size:14.5px">${a[1]}</b><small class="muted" style="display:block;font-size:12.5px;line-height:1.45;margin-top:2px">${a[2]}</small></div></div>`).join('')}
+ <div class="info warn" style="margin-top:6px">${ic('alert',18)}<span>Stop and contact your doctor if you feel dizzy, breathless before effort, chest pain, bleeding, fluid leak or painful contractions.</span></div>
+ <div class="info" style="margin-top:10px">${ic('shield',18)}<span>If you have any pregnancy complication, check with your doctor before starting any activity.</span></div>`});
+let breathInt;
+function breathSheet(){sheet(`<h3 style="text-align:center">Calm breathing</h3><p class="small muted" style="text-align:center;margin-top:4px">Follow the circle</p><div class="breath"><div class="b-circle" id="bc">Ready</div></div><button class="btn block" id="bBtn" onclick="breathToggle()">Begin</button>`)}
+function breathToggle(){const b=$('#bBtn');if(breathInt){clearInterval(breathInt);breathInt=null;b.textContent='Begin';$('#bc').textContent='Ready';$('#bc').classList.remove('in');return}
+ b.textContent='Stop';let ph=0;const step=()=>{const c=$('#bc');if(!c)return clearInterval(breathInt);const P=[['Breathe in',true],['Hold',true],['Breathe out',false]];c.textContent=P[ph%3][0];c.classList.toggle('in',P[ph%3][1]);ph++};step();breathInt=setInterval(step,4000)}
+
+/* Hospital bag */
+function bagPct(){const all=Object.values(BAG).flat().length;return Math.round(Object.values(S.bag).filter(Boolean).length/all*100)}
+PAGES.bag=()=>({title:'Hospital bag',body:`
+ <div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><b>${bagPct()}% packed</b><span class="small muted">Aim to finish by week 35</span></div><div class="progress"><i style="width:${bagPct()}%"></i></div></div>
+ ${Object.entries(BAG).map(([g,items])=>`<div class="h-sec"><h3>${g==='Mother'?'👩 ':g==='Baby'?'👶 ':'📄 '}${g}</h3><span class="small muted">${items.filter(i=>S.bag[g+i]).length}/${items.length}</span></div>
+ <div class="card">${items.map(i=>`<div class="check-item ${S.bag[g+i]?'on':''}" onclick="bagToggle('${g}','${i.replace(/'/g,"\\'")}')"><button class="chk ${S.bag[g+i]?'on':''}">${ic('check',15,3)}</button><span>${i}</span></div>`).join('')}</div>`).join('')}`});
+function bagToggle(g,i){S.bag[g+i]=!S.bag[g+i];save();refreshAll()}
+
+/* Chat */
+PAGES.chat=()=>({title:'Ask Amma',cls:'chat',right:`<span class="tag c-sage">● Online</span>`,body:`
+ <div class="msgs" id="msgs"><div class="msg bot">Hi ${esc(S.name)} 👋 I'm Amma, your pregnancy guide. You're in <b>week ${preg().week}</b>. Ask me about food, symptoms, scan terms or what to ask your doctor.<span class="disc">Educational only — I don't diagnose or prescribe. In an emergency, call 108 or your doctor.</span></div></div>
+ <div class="sugg">${['Can I eat papaya?','Is drumstick leaves good?','Foods with iron','What to eat this week?','Why do I feel nauseous?','Questions for my doctor','What does AFI mean?'].map(s=>`<button onclick="sendChat('${s.replace(/'/g,"\\'")}')">${s}</button>`).join('')}</div>
+ <div class="chatbar"><button class="mic" onclick="toast('🎙️ Voice (Tamil/English) coming in Phase 3')" aria-label="Voice">${ic('mic',20)}</button><input id="chatIn" placeholder="Type your question…" onkeydown="if(event.key==='Enter')sendChat()"><button class="send" onclick="sendChat()" aria-label="Send">${ic('send',19)}</button></div>`});
+function sendChat(txt){const inp=$('#chatIn');const q=(txt??inp.value).trim();if(!q)return;inp.value='';const box=$('#msgs');
+ box.insertAdjacentHTML('beforeend',`<div class="msg me">${esc(q)}</div><div class="msg bot typing" id="typing"><i></i><i></i><i></i></div>`);box.scrollTo({top:box.scrollHeight,behavior:'smooth'});
+ setTimeout(()=>{$('#typing')?.remove();const r=aiReply(q);box.insertAdjacentHTML('beforeend',`<div class="msg bot ${r.emer?'emer':''}">${r.html}${r.emer?'':'<span class="disc">Educational only · Please confirm with your doctor.</span>'}</div>`);box.scrollTo({top:box.scrollHeight,behavior:'smooth'})},850+Math.random()*500)}
+function aiReply(q){const s=q.toLowerCase(), has=(...k)=>k.some(x=>s.includes(x)), w=preg().week;
+ if(has('bleed','blood loss','severe pain','headache','vision','blur','fluid','water broke','waters broke','leak','not moving','no movement','less movement','reduced movement','breath','chest','seizure','fits','faint','sudden swelling','fever'))
+  return {emer:1,html:`<b>⚠️ This could need urgent care.</b><br>Please don't wait — contact your doctor or go to the nearest hospital now.<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><a class="btn sm danger" href="tel:108" style="text-decoration:none">${ic('phone',15)} Call 108</a><button class="btn sm soft" onclick="openPage('emergency')">Warning signs</button></div>`};
+ if(has('raw papaya','unripe papaya'))return {html:'Unripe or semi-ripe papaya should be <b>avoided</b> in pregnancy — it contains latex, which may trigger contractions.'};
+ if(has('papaya'))return {html:'<b>Unripe papaya: avoid.</b> It contains latex, which may trigger contractions.<br><br><b>Fully ripe papaya:</b> many doctors consider small amounts fine, but advice varies — please check with your doctor.'};
+ if(has('drumstick','murungai','moringa'))return {html:'Yes — cooked <b>drumstick leaves (murungai keerai)</b> are a good source of iron, calcium and vitamins. Wash well and cook thoroughly. Avoid moringa extracts or supplements unless your doctor advises them.'};
+ if(has('iron','anaemia','anemia','hemoglobin','haemoglobin'))return {html:'Iron-rich foods:<ul><li>Greens: murungai keerai, spinach</li><li>Dals, rajma, chana, ragi</li><li>Dates, jaggery</li><li>Eggs, chicken, fish (if non-veg)</li></ul>Add vitamin C (guava, amla, lemon) and keep tea/coffee away from meals. Take iron tablets exactly as prescribed.'};
+ if(has('nausea','vomit','morning sickness','sick'))return {html:'Nausea is common, especially in early pregnancy, and is linked to hormone changes. These may help:<ul><li>Small, frequent meals</li><li>Dry snacks like biscuits in the morning</li><li>Ginger, lemon water, sipping fluids</li></ul>Contact your doctor if you can\u2019t keep fluids down, feel dizzy, or pass very little urine.'};
+ if(has('afi','ultrasound','scan','efw','placenta','terminology','report'))return {html:'Common scan terms:<ul><li><b>EFW</b> – estimated fetal weight</li><li><b>AFI</b> – amniotic fluid index, the amount of fluid around baby</li><li><b>Placenta position</b> – where the placenta is attached</li><li><b>FHR</b> – fetal heart rate</li></ul>Your doctor will explain what your own values mean for you.'};
+ if(has('doctor','question','ask'))return {html:`Questions you could ask at week ${w}:<ul><li>Is my baby growing well?</li><li>Are my BP and weight okay?</li><li>Which tests or scans are due next?</li><li>Are my supplements right for me?</li><li>Which vaccines do I need?</li><li>When should I call you urgently?</li></ul>`};
+ if(has('eat','food','diet','week','meal'))return {html:`For week ${w}, focus on:<ul><li>Iron & folate: greens, dal, ragi</li><li>Calcium: curd, milk, ragi</li><li>Protein: dal, paneer${S.diet!=='veg'?', eggs':''}${S.diet==='nonveg'?', fish, chicken':''}</li><li>Plenty of water and fruit</li></ul>Try today\u2019s plan: <b>${MEALS[S.diet][2][2]}</b> for lunch.`};
+ return {html:'Thanks for asking! I can help with food safety, common symptoms, scan terms and doctor questions. Could you tell me a bit more? For anything about your own health, your doctor is the best guide.'}}
+
+/* Article */
+PAGES.article=i=>{const a=ARTICLES[+i];return {title:'',body:`
+ <div class="${a.bg}" style="border-radius:26px;height:170px;display:grid;place-items:center;font-size:80px">${a.e}</div>
+ <div><small style="color:var(--primary);font-weight:700;display:block;margin-top:18px">${a.c} · ${a.min} min read</small><h2 style="font-family:var(--display);font-size:26px;font-weight:600;line-height:1.2;margin-top:6px">${a.title}</h2></div>
+ ${a.body.map(p=>`<p style="font-size:15px;line-height:1.75;color:var(--ink2);margin-top:14px">${p}</p>`).join('')}
+ <div class="review-note" style="margin-top:22px">${ic('info',16)}<span>Medical review pending. Content will be approved by qualified reviewers before publishing.</span></div>
+ <button class="btn ghost block" style="margin-top:14px" onclick="openPage('chat')">${ic('spark',18)} Ask Amma about this</button>`}};
+
+/* Reports */
+let rFilter='All';
+PAGES.reports=()=>({title:'Report vault',right:`<button class="icon-btn" onclick="toast('📤 Upload — choose a file (demo)')" aria-label="Upload">${ic('upload',20)}</button>`,body:`
+ <div class="card" style="background:linear-gradient(135deg,var(--sky),#F3F9FE);display:flex;gap:14px;align-items:center"><div class="ico" style="background:#fff;color:var(--sky-ink)">${ic('lock')}</div><div class="grow"><b style="font-size:15px">${REPORTS.length} documents · encrypted</b><small class="muted" style="display:block;margin-top:2px">Only you decide who can view them</small></div></div>
+ <div class="chips" style="margin-top:14px" id="rChips">${['All','Ultrasound','Blood','Urine','Prescription','Vaccination'].map(c=>`<button class="chip ${rFilter===c?'on':''}" onclick="rFilter='${c}';rerender(this.closest('.page'))">${c}</button>`).join('')}</div>
+ <div style="margin-top:12px">${REPORTS.filter(r=>rFilter==='All'||r.c===rFilter).map((r,i)=>`<div class="food"><div class="ico">${r.e}</div><div class="grow"><b style="font-size:14.5px">${r.t}</b><small class="muted" style="display:block;font-size:12px">${r.c} · ${fmt(addDays(today(),r.d),{day:'numeric',month:'short',year:'numeric'})} · ${r.sz}</small></div><button class="btn sm ghost" onclick="explainSheet('${r.t}')">${ic('spark',14)} Explain</button></div>`).join('')}</div>
+ <p class="small muted" style="text-align:center;margin-top:10px">Timeline sorted by newest first</p>`});
+function explainSheet(t){sheet(`<span class="tag c-lav">${ic('spark',12)} AI summary</span><h3 style="margin-top:10px">${t}</h3>
+ <div class="card" style="margin-top:14px"><small class="muted" style="font-weight:700">IN SIMPLE WORDS</small><p class="small" style="margin-top:6px;line-height:1.6">This report records measurements taken at your visit. Terms like <b>Hb</b> (haemoglobin — carries oxygen in blood) or <b>EFW</b> (estimated baby weight) are explained so you can understand them.</p></div>
+ <div class="card"><small class="muted" style="font-weight:700">POINTS TO DISCUSS WITH YOUR DOCTOR</small><ul class="bullets" style="margin-top:4px"><li>Ask what each highlighted value means for you</li><li>Ask whether any follow-up test is needed</li></ul></div>
+ <div class="info warn">${ic('alert',18)}<span>AI does not diagnose or replace your doctor\u2019s interpretation of this report.</span></div>`)}
+
+/* Family */
+PAGES.family=()=>({title:'Family sharing',right:`<button class="icon-btn" onclick="inviteSheet()" aria-label="Invite">${ic('plus',20)}</button>`,body:`
+ <div class="info">${ic('shield',18)}<span>You control exactly what each person can see. Health records and reports are private by default.</span></div>
+ ${S.family.map((f,fi)=>`<div class="card" style="margin-top:12px"><div style="display:flex;gap:12px;align-items:center"><div class="avatar" style="width:46px;height:46px;font-size:17px;background:linear-gradient(135deg,${fi?'#9B86E0,#6A55B8':'#7CC0EC,#2C6C9D'})">${f.name[0]}</div><div class="grow"><b>${f.name}</b><small class="muted" style="display:block">${f.rel} · ${f.role}</small></div><span class="tag c-sage">Active</span></div>
+  <div style="margin-top:12px">${[['appts','Appointments'],['meds','Medicine reminders'],['baby','Baby updates'],['health','Health records'],['reports','Medical reports']].map(([k,l])=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-top:1px solid var(--line)"><span class="small" style="font-weight:600">${l}</span><button class="switch ${f.p[k]?'on':''}" onclick="S.family[${fi}].p.${k}=!S.family[${fi}].p.${k};save();this.classList.toggle('on')" aria-label="${l}"></button></div>`).join('')}</div></div>`).join('')}
+ <button class="btn ghost block" style="margin-top:14px" onclick="inviteSheet()">${ic('users',18)} Invite partner or family</button>`});
+function inviteSheet(){sheet(`<h3>Invite to your journey</h3><label class="label">Name</label><input class="field" id="iN" placeholder="Name"><label class="label">Mobile number</label><input class="field" id="iM" inputmode="tel" placeholder="+91">
+ <label class="label">Access</label><div class="choice" id="iR"><button class="on">Partner</button><button>Family viewer</button></div>
+ <button class="btn block" style="margin-top:20px" onclick="sendInvite()">Send invite via SMS</button>`);
+ $('#iR').onclick=e=>{const b=e.target.closest('button');if(b)[...$('#iR').children].forEach(x=>x.classList.toggle('on',x===b))}}
+function sendInvite(){const n=$('#iN').value.trim();if(!n)return toast('Please enter a name');S.family.push({name:n,rel:'Invited',role:$('#iR .on').textContent,p:{appts:true,meds:false,baby:true,health:false,reports:false}});save();closeSheet();refreshAll();toast('📨 Invite sent to '+n)}
+
+/* Emergency */
+PAGES.emergency=()=>({title:'Emergency help',body:`
+ <div class="emer-hero"><div class="pulse-dot">${ic('alert',26)}</div><h3>If something feels wrong, don't wait.</h3><p>Call for help or go to your hospital immediately. Never use the app to delay care.</p></div>
+ <div class="call-grid">
+  <a class="call tap" href="tel:108"><span class="ico c-red">${ic('phone',20)}</span><b>Ambulance 108</b><small>Emergency</small></a>
+  <a class="call tap" href="tel:102"><span class="ico c-peach">${ic('hosp',20)}</span><b>Call 102</b><small>Maternity transport</small></a>
+  <a class="call tap" href="tel:+910000000000"><span class="ico c-lav">${ic('phone',20)}</span><b>Dr. Meena</b><small>Your doctor</small></a>
+  <button class="call tap" onclick="toast('📣 Alert sent to Arun & Kamala')"><span class="ico c-sage">${ic('users',20)}</span><b>Alert family</b><small>Trusted contacts</small></button></div>
+ <button class="btn soft block" style="margin-top:10px" onclick="toast('📍 Location shared with your consent')">${ic('pin',18)} Share my location (with consent)</button>
+ <div class="h-sec"><h3>Get help immediately if you have</h3></div>
+ <div class="card">${WARN.map(w=>`<div class="rowi"><div class="ico c-red">${w[0]}</div><div class="grow"><b>${w[1]}</b></div></div>`).join('')}</div>
+ <div class="h-sec"><h3>Saved hospital</h3></div>
+ <div class="card" style="display:flex;gap:14px;align-items:center"><div class="ico c-sky">${ic('hosp')}</div><div class="grow"><b style="font-size:14.5px">Lotus Maternity Centre</b><small class="muted" style="display:block">Open 24×7 · Labour ward</small></div><a class="btn sm ghost" href="tel:+910000000000" style="text-decoration:none">Call</a></div>
+ <p class="small muted" style="text-align:center;margin-top:16px;line-height:1.5">This page is always free and available offline.<br>Educational content is not a substitute for emergency care.</p>`});
+
+/* Pregnancy profile */
+PAGES.pregnancy=()=>{const p=preg();return {title:'Pregnancy profile',body:`
+ <div class="card">${[['Last menstrual period',fmt(parse(S.lmp))],['Estimated due date',fmt(p.edd)],['Gestational age',`${p.week} weeks ${p.day} days`],['Pregnancy type','Single'],['Dating method','LMP (doctor can confirm by scan)'],['Food preference',S.diet==='veg'?'Vegetarian':S.diet==='egg'?'Eggetarian':'Non-vegetarian'],['Blood group','Add from report'],['Doctor','Dr. Meena Krishnan'],['Hospital','Lotus Maternity Centre']].map(r=>`<div class="rowi"><div class="grow"><small style="margin:0">${r[0]}</small><b style="margin-top:2px">${r[1]}</b></div></div>`).join('')}</div>
+ <button class="btn block" style="margin-top:14px" onclick="editDateSheet()">${ic('edit',18)} Update dates</button>`}};
+function editDateSheet(){sheet(`<h3>Update pregnancy dates</h3><p class="small muted" style="margin-top:4px">Use the date confirmed by your doctor, if available.</p>
+ <label class="label">First day of last period</label><input class="field" type="date" id="eL" value="${S.lmp}" max="${iso(today())}">
+ <label class="label">Food preference</label><div class="choice" id="eDiet">${[['veg','Veg'],['egg','Egg'],['nonveg','Non-veg']].map(([k,l])=>`<button data-v="${k}" class="${S.diet===k?'on':''}">${l}</button>`).join('')}</div>
+ <button class="btn block" style="margin-top:20px" onclick="saveDates()">Save</button>`);$('#eDiet').onclick=e=>{const b=e.target.closest('button');if(b)[...$('#eDiet').children].forEach(x=>x.classList.toggle('on',x===b))}}
+function saveDates(){const v=$('#eL').value;const d=Math.round((today()-parse(v))/DAY);if(!v||d<14||d>300)return toast('Please check the date');S.lmp=v;S.diet=$('#eDiet .on').dataset.v;S.viewWeek=null;save();closeSheet();refreshAll();toast('✅ Pregnancy profile updated')}
+
+/* Settings */
+PAGES.settings=()=>({title:'Settings',body:`
+ <div class="h-sec" style="margin-top:4px"><h3>Notifications</h3></div>
+ <div class="menu">${[['meds','Medicine reminders'],['appts','Appointment reminders'],['water','Water reminders'],['weekly','Weekly pregnancy update'],['baby','Baby development updates']].map(([k,l])=>`<div class="mi"><b>${l}</b><button class="switch ${S.notif[k]?'on':''}" onclick="S.notif.${k}=!S.notif.${k};save();this.classList.toggle('on')" aria-label="${l}"></button></div>`).join('')}</div>
+ <div class="h-sec"><h3>Language</h3></div>
+ <div class="choice"><button class="${S.lang==='en'?'on':''}" onclick="if(S.lang!=='en'){toggleLang();rerender(this.closest('.page'))}">English</button><button class="ta ${S.lang==='ta'?'on':''}" onclick="if(S.lang!=='ta'){toggleLang();rerender(this.closest('.page'))}">தமிழ்</button></div>
+ <div class="h-sec"><h3>Privacy & data</h3></div>
+ <div class="menu">${mi('c-sage','shield','Consent management',"toast('Consent settings (demo)')")}${mi('c-sky','upload','Export my data',"toast('📦 Export prepared (demo)')")}${mi('c-red','x','Delete my account',"resetDemo()")}</div>`});
+
+/* Notifications sheet */
+function openNotifs(){const p=preg();sheet(`<h3>Notifications</h3><div style="margin-top:12px">${[['c-blush','baby',`Week ${p.week} update is ready`,`Your baby is about the size of a ${wk(p.week).name}.`,'Today'],['c-amber','pill','Iron + Folic acid at 2:00 PM','After lunch · avoid tea/milk for 1 hour','Today'],['c-lav','cal','Antenatal check-up in 4 days','Dr. Meena Krishnan · 10:30 AM','Yesterday'],['c-sky','drop','Time for a glass of water','You are halfway to your goal','Yesterday']].map(n=>`<div class="rowi"><div class="ico ${n[0]}">${ic(n[1],19)}</div><div class="grow"><b>${n[2]}</b><small>${n[3]}</small></div><span class="small muted">${n[4]}</span></div>`).join('')}</div>`)}
+
+/* ================= Sheet & toast ================= */
+function sheet(html){$('#sheetBody').innerHTML=html;$('#sheetBody').scrollTop=0;$('#backdrop').classList.add('on');$('#sheet').classList.add('on')}
+function closeSheet(){$('#backdrop').classList.remove('on');$('#sheet').classList.remove('on');if(breathInt){clearInterval(breathInt);breathInt=null}}
+let tT;function toast(m){const e=$('#toast');e.textContent=m;e.classList.add('on');clearTimeout(tT);tT=setTimeout(()=>e.classList.remove('on'),2200)}
+/* swipe down to close sheet */
+(()=>{let y0=null,dy=0;const sh=$('#sheet');sh.addEventListener('touchstart',e=>{if($('#sheetBody').scrollTop>0)return;y0=e.touches[0].clientY;sh.style.transition='none'},{passive:true});
+ sh.addEventListener('touchmove',e=>{if(y0===null)return;dy=Math.max(0,e.touches[0].clientY-y0);sh.style.transform=`translateY(${dy}px)`},{passive:true});
+ sh.addEventListener('touchend',()=>{sh.style.transition='';sh.style.transform='';if(dy>110)closeSheet();y0=null;dy=0})})();
+/* ripple */
+document.addEventListener('pointerdown',e=>{const b=e.target.closest('.btn,.tile,.mi,.call');if(!b)return;const r=b.getBoundingClientRect(),sc=r.width/b.offsetWidth||1,s=Math.max(b.offsetWidth,b.offsetHeight);
+ const sp=document.createElement('span');sp.className='ripple';sp.style.cssText=`width:${s}px;height:${s}px;left:${(e.clientX-r.left)/sc-s/2}px;top:${(e.clientY-r.top)/sc-s/2}px`;
+ if(getComputedStyle(b).position==='static')b.style.position='relative';b.style.overflow='hidden';b.appendChild(sp);setTimeout(()=>sp.remove(),650)});
+addEventListener('resize',()=>{if(!$('#app').classList.contains('hidden'))movePill()});
+</script>
+</body>
+</html>

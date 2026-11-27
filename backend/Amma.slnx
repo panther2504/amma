@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Amma.Api/Amma.Api.csproj" />
+    <Project Path="src/Amma.Domain/Amma.Domain.csproj" />
+    <Project Path="src/Amma.Infrastructure/Amma.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Amma.Tests/Amma.Tests.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,21 @@
+# .NET
+bin/
+obj/
+*.user
+.vs/
+backend/src/Amma.Api/data/
+backend/src/Amma.Api/wwwroot/
+appsettings.*.local.json
+
+# Node
+node_modules/
+frontend/dist/
+*.tsbuildinfo
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/
+*.log
+.env
+.env.*
