@@ -32,6 +32,20 @@ public class MeController(AuditService audit, IFileStorage storage) : ApiControl
         return me.ToDto(await ActivePregnancyAsync(ct) is not null);
     }
 
+    /// <summary>Changes the PIN (PIN sign-in mode).</summary>
+    [HttpPut("pin")]
+    public async Task<IActionResult> ChangePin(ChangePinRequest req, CancellationToken ct)
+    {
+        var me = await MeAsync(ct);
+        var hasher = new Microsoft.AspNetCore.Identity.PasswordHasher<User>();
+        if (me.PinHash is null || hasher.VerifyHashedPassword(me, me.PinHash, req.CurrentPin) == Microsoft.AspNetCore.Identity.PasswordVerificationResult.Failed)
+            return Problem(detail: "Your current PIN is not correct.", statusCode: 400);
+        me.PinHash = hasher.HashPassword(me, req.NewPin);
+        audit.Record(UserId, "auth.pin.change");
+        await Db.SaveChangesAsync(ct);
+        return NoContent();
+    }
+
     // ----- Consent management -----
     [HttpGet("consents")]
     public async Task<IEnumerable<ConsentDto>> Consents(CancellationToken ct)

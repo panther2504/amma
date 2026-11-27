@@ -13,6 +13,12 @@ namespace Amma.Api.Contracts;
 public record OtpRequest([Required, MaxLength(254)] string Destination);
 public record OtpRequestResponse(bool Sent, int ExpiresInSeconds, string? DevCode);
 public record OtpVerifyRequest([Required] string Destination, [Required, StringLength(8, MinimumLength = 4)] string Code);
+public record AuthConfigResponse(string Mode);
+public record PinStatusRequest([Required, MaxLength(254)] string Destination);
+public record PinStatusResponse(bool HasPin);
+public record PinSetupRequest([Required, MaxLength(254)] string Destination, [Required, MaxLength(128)] string SetupCode, [Required, RegularExpression(@"^\d{4,8}$")] string Pin);
+public record PinLoginRequest([Required, MaxLength(254)] string Destination, [Required, MaxLength(8)] string Pin);
+public record ChangePinRequest([Required, MaxLength(8)] string CurrentPin, [Required, RegularExpression(@"^\d{4,8}$")] string NewPin);
 public record RefreshRequest([Required] string RefreshToken);
 public record AuthResponse(string AccessToken, DateTimeOffset AccessTokenExpiresAt, string RefreshToken, UserDto User, bool IsNewUser);
 

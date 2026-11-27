@@ -81,12 +81,23 @@ Before going live, configure these settings (environment variables use `__`, e.g
 
 ## Private use (just your family)
 
-To run Amma only for yourselves, add these on top of the production settings:
+For a single family, switch sign-in to a **PIN per person** (no SMS provider needed) and restrict the app to your own numbers. Set these on the server:
 
-| Setting | Value |
-|---|---|
-| `Otp:AllowedDestinations` | Your two mobile numbers, e.g. `Otp__AllowedDestinations__0=98xxxxxxxx` and `Otp__AllowedDestinations__1=97xxxxxxxx`. Every other number is refused. |
-| `Content:IncludeUnreviewed` | `true` shows the starter food guide, weekly guide and articles. They stay labelled "review pending": they are general guidance, so check anything important with your doctor. |
+```bash
+export SignIn__Mode=pin
+export SignIn__SetupCode="<a long secret only you two know>"
+export Otp__AllowedDestinations__0=98xxxxxxxx
+export Otp__AllowedDestinations__1=97xxxxxxxx
+export Content__IncludeUnreviewed=true
+```
+
+- Only the listed numbers can use the app; any other number is refused.
+- The first time each of you signs in, you choose a 4–8 digit PIN and enter the setup code once. That stops anyone else from creating a PIN for your number before you do.
+- After 5 wrong PINs the account locks for 15 minutes. You can change your PIN under Profile → Settings → Security.
+- `Content__IncludeUnreviewed=true` shows the starter food guide, weekly guide and articles. They stay labelled "review pending": they are general guidance, so check anything important with your doctor.
+- To add your wife as a partner instead of a second mother account, sign in with your number first and invite her number from Profile → Family sharing (or the other way round).
+
+The API refuses to start in PIN mode if the number list or setup code is missing.
 
 ## What's implemented
 

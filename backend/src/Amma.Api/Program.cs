@@ -17,6 +17,15 @@ var config = builder.Configuration;
 builder.Services.Configure<JwtOptions>(config.GetSection("Jwt"));
 builder.Services.Configure<OtpOptions>(config.GetSection("Otp"));
 builder.Services.Configure<ContentOptions>(config.GetSection("Content"));
+builder.Services.Configure<AmmaSignInOptions>(config.GetSection("SignIn"));
+var signIn = config.GetSection("SignIn").Get<AmmaSignInOptions>() ?? new AmmaSignInOptions();
+if (signIn.IsPin)
+{
+    if ((config.GetSection("Otp:AllowedDestinations").Get<string[]>() ?? []).Length == 0)
+        throw new InvalidOperationException("PIN sign-in is for private use: set Otp:AllowedDestinations to the allowed mobile numbers.");
+    if (signIn.SetupCode.Length < 8)
+        throw new InvalidOperationException("PIN sign-in needs SignIn:SetupCode (at least 8 characters) so only you can create PINs.");
+}
 var jwt = config.GetSection("Jwt").Get<JwtOptions>() ?? new JwtOptions();
 if (jwt.SigningKey.Length < 32)
     throw new InvalidOperationException("Jwt:SigningKey must be at least 32 characters. Set it with user-secrets or the Jwt__SigningKey environment variable.");

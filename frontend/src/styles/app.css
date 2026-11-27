@@ -483,3 +483,4 @@ textarea.field{min-height:96px;resize:vertical}
 .toast{transform:translate(-50%,calc(-100% - var(--sb) - 24px))}
 .toast.on{transform:translate(-50%,0)}
 .offline-bar{top:auto;bottom:calc(96px + env(safe-area-inset-bottom));left:20px;right:20px;border-radius:14px;padding:9px 12px;pointer-events:none;box-shadow:var(--shadow-sm)}
+.toast{white-space:normal;text-align:center;width:max-content;max-width:calc(100% - 40px);line-height:1.4}

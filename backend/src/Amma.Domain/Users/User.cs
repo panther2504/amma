@@ -23,6 +23,11 @@ public class User : Entity
     public UserRole Role { get; set; } = UserRole.Mother;
     public bool IsActive { get; set; } = true;
     public DateTimeOffset? LastLoginAt { get; set; }
+
+    /// <summary>PBKDF2 hash of the user's PIN (PIN sign-in mode only).</summary>
+    public string? PinHash { get; set; }
+    public int FailedPinAttempts { get; set; }
+    public DateTimeOffset? PinLockedUntil { get; set; }
 }
 
 public enum OtpPurpose { Login = 0, FamilyInvite = 1 }

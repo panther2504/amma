@@ -245,3 +245,53 @@ public class PrivateAccessTests
         Assert.Equal(HttpStatusCode.Forbidden, blocked.StatusCode);
     }
 }
+
+public class PinSignInTests
+{
+    private static WebApplicationFactory<Program> Factory() => new AmmaFactory().WithWebHostBuilder(b =>
+    {
+        b.UseSetting("SignIn:Mode", "pin");
+        b.UseSetting("SignIn:SetupCode", "our-family-secret");
+        b.UseSetting("Otp:AllowedDestinations:0", "9800000011");
+        b.UseSetting("Otp:AllowedDestinations:1", "9800000012");
+    });
+
+    [Fact]
+    public async Task Pin_setup_login_and_lockout()
+    {
+        await using var f = Factory();
+        var c = f.CreateClient();
+        Assert.Equal("pin", (await c.GetFromJsonAsync<AuthConfigResponse>("/api/v1/auth/config"))!.Mode);
+        // OTP endpoints are disabled in PIN mode.
+        Assert.Equal(HttpStatusCode.NotFound, (await c.PostAsJsonAsync("/api/v1/auth/otp/request", new { destination = "9800000011" })).StatusCode);
+        // Numbers outside the list are refused.
+        Assert.Equal(HttpStatusCode.Forbidden, (await c.PostAsJsonAsync("/api/v1/auth/pin/status", new { destination = "9800000099" })).StatusCode);
+
+        var st = await (await c.PostAsJsonAsync("/api/v1/auth/pin/status", new { destination = "9800000011" })).Content.ReadFromJsonAsync<PinStatusResponse>();
+        Assert.False(st!.HasPin);
+        // Wrong setup code cannot claim the number.
+        Assert.Equal(HttpStatusCode.BadRequest, (await c.PostAsJsonAsync("/api/v1/auth/pin/setup", new { destination = "9800000011", setupCode = "guess", pin = "123456" })).StatusCode);
+        var setup = await c.PostAsJsonAsync("/api/v1/auth/pin/setup", new { destination = "9800000011", setupCode = "our-family-secret", pin = "246810" });
+        setup.EnsureSuccessStatusCode();
+        // Can't overwrite an existing PIN with the setup code.
+        Assert.Equal(HttpStatusCode.Conflict, (await c.PostAsJsonAsync("/api/v1/auth/pin/setup", new { destination = "9800000011", setupCode = "our-family-secret", pin = "111111" })).StatusCode);
+
+        (await c.PostAsJsonAsync("/api/v1/auth/pin/login", new { destination = "+91 98000 00011", pin = "246810" })).EnsureSuccessStatusCode();
+        for (var i = 0; i < 5; i++)
+            Assert.Equal(HttpStatusCode.BadRequest, (await c.PostAsJsonAsync("/api/v1/auth/pin/login", new { destination = "9800000011", pin = "000000" })).StatusCode);
+        // Locked now, even with the right PIN.
+        Assert.Equal(HttpStatusCode.TooManyRequests, (await c.PostAsJsonAsync("/api/v1/auth/pin/login", new { destination = "9800000011", pin = "246810" })).StatusCode);
+    }
+
+    [Fact]
+    public async Task Pin_can_be_changed()
+    {
+        await using var f = Factory();
+        var c = f.CreateClient();
+        var auth = await (await c.PostAsJsonAsync("/api/v1/auth/pin/setup", new { destination = "9800000012", setupCode = "our-family-secret", pin = "1357" })).Content.ReadFromJsonAsync<AuthResponse>(new JsonSerializerOptions(JsonSerializerDefaults.Web) { Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) } });
+        c.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", auth!.AccessToken);
+        Assert.Equal(HttpStatusCode.BadRequest, (await c.PutAsJsonAsync("/api/v1/me/pin", new { currentPin = "0000", newPin = "8642" })).StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, (await c.PutAsJsonAsync("/api/v1/me/pin", new { currentPin = "1357", newPin = "8642" })).StatusCode);
+        (await f.CreateClient().PostAsJsonAsync("/api/v1/auth/pin/login", new { destination = "9800000012", pin = "8642" })).EnsureSuccessStatusCode();
+    }
+}

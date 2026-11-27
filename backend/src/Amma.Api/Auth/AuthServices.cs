@@ -35,6 +35,17 @@ public class OtpOptions
         AllowedDestinations.Count == 0 || AllowedDestinations.Any(a => Destination.Normalize(a) == normalized);
 }
 
+public class AmmaSignInOptions
+{
+    /// <summary>"otp" (one-time code by SMS/e-mail) or "pin" (private use: PIN per person, needs Otp:AllowedDestinations).</summary>
+    public string Mode { get; set; } = "otp";
+    /// <summary>PIN mode: secret needed once to create a PIN, so nobody else can claim an allowed number first.</summary>
+    public string SetupCode { get; set; } = "";
+    public int MaxPinAttempts { get; set; } = 5;
+    public int LockoutMinutes { get; set; } = 15;
+    public bool IsPin => string.Equals(Mode, "pin", StringComparison.OrdinalIgnoreCase);
+}
+
 public static partial class Destination
 {
     [GeneratedRegex(@"^\+91[6-9]\d{9}$")] private static partial Regex IndianMobile();

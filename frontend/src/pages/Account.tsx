@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { api, del, put } from '../api/client'
 import { useAction, useConsents, useNotificationPrefs, usePregnancy } from '../api/hooks'
 import type { ConsentType, Diet, NotificationPrefs, Pregnancy, SavePregnancy, User } from '../api/types'
@@ -96,6 +96,7 @@ export function SettingsPage() {
           <div className="mi" key={k}><b>{l}</b><Switch on={!!p[k]} label={l} onChange={v => save.mutate({ ...p, [k]: v })} /></div>
         ))}
       </div>}
+      <PinSection />
       <SecHead title="Language" />
       <Choice value={lang} onChange={v => v !== lang && lng.mutate(v)} options={[['en', 'English'], ['ta', <span className="ta" key="ta">தமிழ்</span>]]} />
       <p className="small muted" style={{ marginTop: 10, lineHeight: 1.5 }}>Tamil translations of all medical content are being reviewed; untranslated content is shown in English.</p>
@@ -152,5 +153,37 @@ export function PrivacyPage() {
         <MenuItem c="c-red" i="x" label="Delete my account" onClick={deleteAccount} />
       </div>
     </PageFrame>
+  )
+}
+
+function PinSection() {
+  const toast = useToast()
+  const sheet = useSheet()
+  const [mode, setMode] = useState<string | null>(null)
+  useEffect(() => { api<{ mode: string }>('/auth/config').then(c => setMode(c.mode)).catch(() => {}) }, [])
+  if (mode !== 'pin') return null
+  const Form = () => {
+    const [f, setF] = useState({ cur: '', next: '', again: '' })
+    const d = (v: string) => v.replace(/\D/g, '').slice(0, 8)
+    const save = async () => {
+      if (!/^\d{4,8}$/.test(f.next)) return toast('Choose a PIN of 4 to 8 digits')
+      if (f.next !== f.again) return toast('The two PINs do not match')
+      try { await put('/me/pin', { currentPin: f.cur, newPin: f.next }); sheet.close(); toast('🔒 PIN changed') } catch (e) { toast((e as Error).message) }
+    }
+    return (
+      <>
+        <h3>Change PIN</h3>
+        <label className="label" htmlFor="pc">Current PIN</label><input className="field" id="pc" type="password" inputMode="numeric" value={f.cur} onChange={e => setF({ ...f, cur: d(e.target.value) })} />
+        <label className="label" htmlFor="pn">New PIN</label><input className="field" id="pn" type="password" inputMode="numeric" value={f.next} onChange={e => setF({ ...f, next: d(e.target.value) })} />
+        <label className="label" htmlFor="pa">Repeat new PIN</label><input className="field" id="pa" type="password" inputMode="numeric" value={f.again} onChange={e => setF({ ...f, again: d(e.target.value) })} />
+        <button className="btn block" style={{ marginTop: 20 }} onClick={save}>Save PIN</button>
+      </>
+    )
+  }
+  return (
+    <>
+      <SecHead title="Security" />
+      <div className="menu"><MenuItem c="c-lav" i="lock" label="Change PIN" onClick={() => sheet.open(<Form />)} /></div>
+    </>
   )
 }
