@@ -231,3 +231,17 @@ public class RoutingTests(AmmaFactory factory) : IClassFixture<AmmaFactory>
         Assert.Equal(HttpStatusCode.NotFound, (await c.SendAsync(new HttpRequestMessage(HttpMethod.Head, "/api/v1/me"))).StatusCode);
     }
 }
+
+public class PrivateAccessTests
+{
+    [Fact]
+    public async Task Only_allowed_numbers_can_sign_in()
+    {
+        await using var f = new AmmaFactory().WithWebHostBuilder(b => b.UseSetting("Otp:AllowedDestinations:0", "9800000001"));
+        var c = f.CreateClient();
+        var ok = await c.PostAsJsonAsync("/api/v1/auth/otp/request", new { destination = "+91 98000 00001" });
+        Assert.Equal(HttpStatusCode.OK, ok.StatusCode);
+        var blocked = await c.PostAsJsonAsync("/api/v1/auth/otp/request", new { destination = "9800000002" });
+        Assert.Equal(HttpStatusCode.Forbidden, blocked.StatusCode);
+    }
+}

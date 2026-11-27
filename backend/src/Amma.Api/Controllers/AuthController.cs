@@ -28,6 +28,7 @@ public class AuthController(AmmaDbContext db, TokenService tokens, IOtpSender se
     {
         var dest = Destination.Normalize(req.Destination);
         if (dest is null) return ValidationProblem(new ValidationProblemDetails(Msg("Destination", "Enter a valid Indian mobile number (+91) or e-mail address.")));
+        if (!_otp.IsAllowed(dest)) return Problem(detail: "This is a private app. This number is not on the access list.", statusCode: 403);
 
         var now = clock.GetUtcNow();
         var recent = await db.OtpCodes.CountAsync(o => o.Destination == dest && o.CreatedAt > now.AddMinutes(-15), ct);
@@ -45,6 +46,7 @@ public class AuthController(AmmaDbContext db, TokenService tokens, IOtpSender se
     {
         var dest = Destination.Normalize(req.Destination);
         if (dest is null) return ValidationProblem(new ValidationProblemDetails(Msg("Destination", "Invalid mobile number or e-mail.")));
+        if (!_otp.IsAllowed(dest)) return Problem(detail: "This is a private app.", statusCode: 403);
         var now = clock.GetUtcNow();
         var otp = await db.OtpCodes
             .Where(o => o.Destination == dest && o.Purpose == OtpPurpose.Login && o.ConsumedAt == null && o.ExpiresAt > now)

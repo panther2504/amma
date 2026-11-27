@@ -28,6 +28,11 @@ public class OtpOptions
     public bool ReturnCodeInResponse { get; set; }
     /// <summary>Phones/e-mails that are promoted to Admin on first login (bootstrap only).</summary>
     public List<string> AdminDestinations { get; set; } = [];
+    /// <summary>When not empty, only these phones/e-mails may sign in (private use, e.g. a single family).</summary>
+    public List<string> AllowedDestinations { get; set; } = [];
+
+    public bool IsAllowed(string normalized) =>
+        AllowedDestinations.Count == 0 || AllowedDestinations.Any(a => Destination.Normalize(a) == normalized);
 }
 
 public static partial class Destination

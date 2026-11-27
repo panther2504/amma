@@ -79,6 +79,15 @@ Before going live, configure these settings (environment variables use `__`, e.g
 
 **Important:** starter content is seeded with status `InReview`. With `IncludeUnreviewed=false`, the food guide, weekly guide and articles stay empty until a medical reviewer approves them and an admin publishes them. Emergency warning signs are also bundled into the app, so they are always available.
 
+## Private use (just your family)
+
+To run Amma only for yourselves, add these on top of the production settings:
+
+| Setting | Value |
+|---|---|
+| `Otp:AllowedDestinations` | Your two mobile numbers, e.g. `Otp__AllowedDestinations__0=98xxxxxxxx` and `Otp__AllowedDestinations__1=97xxxxxxxx`. Every other number is refused. |
+| `Content:IncludeUnreviewed` | `true` shows the starter food guide, weekly guide and articles. They stay labelled "review pending": they are general guidance, so check anything important with your doctor. |
+
 ## What's implemented
 
 | Area | Highlights |
