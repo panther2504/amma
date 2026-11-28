@@ -5,6 +5,7 @@ import type { Person } from '../api/types'
 import { Info, MenuItem, SecHead } from '../ui/bits'
 import { useApp, usePages, useSheet, useToast } from '../ui/shell'
 import { AppVersionSection, PinSection } from '../pages/Account'
+import { useDrive } from '../pages/Drive'
 import { notificationStatus, openExactAlarmSettings, requestNotificationPermission, testReminder } from '../lib/reminders'
 import { fmt } from '../lib/util'
 
@@ -15,6 +16,7 @@ export function SettingsTab() {
   const toast = useToast()
   const person = usePerson()
   const preg = usePregnancy()
+  const drive = useDrive()
   const [st, setSt] = useState<{ permission: boolean; exact: boolean } | null>(null)
   useEffect(() => { notificationStatus().then(setSt).catch(() => {}) }, [])
 
@@ -46,6 +48,11 @@ export function SettingsTab() {
       <Info style={{ marginTop: 12 }}>
         If a reminder ever comes late, open phone <b>Settings → Apps → Amma → Battery</b> and choose <b>Unrestricted</b> (some phones call it "No restrictions" or turn off "Battery optimisation").
       </Info>
+
+      <SecHead title="Photos" />
+      <div className="menu">
+        <MenuItem c="c-sage" i="image" label={drive.data?.connected ? `Google Drive · connected` : 'Save photos to Google Drive'} onClick={() => open('drive')} />
+      </div>
 
       <SecHead title="Pregnancy" />
       <div className="menu">

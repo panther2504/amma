@@ -34,6 +34,7 @@ public class AmmaDbContext(DbContextOptions<AmmaDbContext> options) : DbContext(
     public DbSet<Reminder> Reminders => Set<Reminder>();
     public DbSet<ReminderLog> ReminderLogs => Set<ReminderLog>();
     public DbSet<MemoryPhoto> MemoryPhotos => Set<MemoryPhoto>();
+    public DbSet<DriveConnection> DriveConnections => Set<DriveConnection>();
 
     // Tracking
     public DbSet<WaterLog> WaterLogs => Set<WaterLog>();
@@ -120,6 +121,8 @@ public class AmmaDbContext(DbContextOptions<AmmaDbContext> options) : DbContext(
         m.Entity<ReminderLog>().HasIndex(x => new { x.ReminderId, x.Date, x.Time }).IsUnique();
         m.Entity<ReminderLog>().HasIndex(x => new { x.UserId, x.Date });
         m.Entity<MemoryPhoto>().HasIndex(x => new { x.UserId, x.TakenOn });
+        m.Entity<DriveConnection>().HasIndex(x => x.UserId).IsUnique();
+        m.Entity<DriveConnection>().Property(x => x.ClientId).HasMaxLength(200);
         m.Entity<MemoryPhoto>().Property(x => x.ThumbnailDataUrl).HasMaxLength(200_000);
 
         m.Entity<WaterLog>().HasIndex(x => new { x.UserId, x.Date }).IsUnique();

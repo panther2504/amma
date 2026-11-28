@@ -199,7 +199,8 @@ public class MeController(AuditService audit, IFileStorage storage) : ApiControl
         await RemoveAll<Domain.Tracking.KickSession>(id, ct); await RemoveAll<Domain.Tracking.HospitalBagCheck>(id, ct); await RemoveAll<FamilyMember>(id, ct);
         await RemoveAll<Domain.Documents.MedicalDocument>(id, ct); await RemoveAll<Notification>(id, ct); await RemoveAll<NotificationPreference>(id, ct);
         await RemoveAll<Domain.Assistant.AssistantMessage>(id, ct);
-        foreach (var mp in await Db.MemoryPhotos.Where(x => x.UserId == id).ToListAsync(ct)) await storage.DeleteAsync(mp.PhotoKey, ct);
+        foreach (var mp in await Db.MemoryPhotos.Where(x => x.UserId == id && !x.PhotoKey.StartsWith("gdrive:")).ToListAsync(ct)) await storage.DeleteAsync(mp.PhotoKey, ct);
+        await RemoveAll<Domain.Documents.DriveConnection>(id, ct);
         await RemoveAll<Domain.Documents.MemoryPhoto>(id, ct); await RemoveAll<Domain.Care.Reminder>(id, ct); await RemoveAll<Domain.Care.ReminderLog>(id, ct);
         foreach (var link in await Db.FamilyMembers.Where(f => f.MemberUserId == id).ToListAsync(ct)) { link.MemberUserId = null; link.Status = FamilyMemberStatus.Revoked; }
 

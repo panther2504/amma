@@ -35,5 +35,8 @@ services:
         sync: false
       - key: Otp__AllowedDestinations__1
         sync: false
+      # Public address (used as the Google Drive sign-in return link); set to your Render URL.
+      - key: App__PublicUrl
+        sync: false
       - key: Content__IncludeUnreviewed
         value: "true"

@@ -22,12 +22,14 @@ import { MemoriesTab } from './tabs/Memories'
 import { SettingsTab } from './tabs/Settings'
 import { RemindersPage } from './pages/RemindersEdit'
 import { PregnancyPage } from './pages/Account'
+import { DrivePage } from './pages/Drive'
 import { queuePost } from './api/client'
 import { translate } from './lib/i18n'
 
 const PAGES: Record<string, PageRenderer> = {
   reminders: () => <RemindersPage />,
   pregnancy: () => <PregnancyPage />,
+  drive: () => <DrivePage />,
 }
 
 type Stage = 'splash' | 'onboard' | 'login' | 'setup' | 'app'

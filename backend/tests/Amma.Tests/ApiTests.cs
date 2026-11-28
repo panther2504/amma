@@ -529,3 +529,103 @@ public class SharedRemindersTests
         Assert.Equal(60.5m, h.LatestWeight!.Kg);
     }
 }
+
+/// <summary>Stands in for Google's OAuth and Drive APIs.</summary>
+public class FakeGoogle : HttpMessageHandler
+{
+    public readonly Dictionary<string, byte[]> Files = new();
+    public int Folders;
+    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage req, CancellationToken ct)
+    {
+        var u = req.RequestUri!;
+        HttpResponseMessage Json(string s) => new(HttpStatusCode.OK) { Content = new StringContent(s, System.Text.Encoding.UTF8, "application/json") };
+        if (u.Host == "oauth2.googleapis.com")
+        {
+            var form = await req.Content!.ReadAsStringAsync(ct);
+            Assert.Contains("client_secret=s3cret-value-123", form);
+            return Json("""{"access_token":"at","expires_in":3599,"refresh_token":"rt"}""");
+        }
+        Assert.Equal("Bearer at", req.Headers.Authorization?.ToString());
+        if (u.AbsolutePath == "/drive/v3/about") return Json("""{"user":{"emailAddress":"family@example.com"}}""");
+        if (u.AbsolutePath == "/drive/v3/files" && req.Method == HttpMethod.Post) { Folders++; return Json("""{"id":"folder1"}"""); }
+        if (u.AbsolutePath == "/upload/drive/v3/files")
+        {
+            var parts = ((MultipartContent)req.Content!).ToList();
+            Assert.Contains("folder1", await parts[0].ReadAsStringAsync(ct));
+            var id = "f" + (Files.Count + 1);
+            Files[id] = await parts[1].ReadAsByteArrayAsync(ct);
+            return Json($$"""{"id":"{{id}}"}""");
+        }
+        var fileId = u.AbsolutePath.Split('/').Last();
+        if (req.Method == HttpMethod.Get && Files.TryGetValue(fileId, out var bytes)) return new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(bytes) };
+        if (req.Method == HttpMethod.Delete) { Files.Remove(fileId); return new HttpResponseMessage(HttpStatusCode.NoContent); }
+        return new HttpResponseMessage(HttpStatusCode.NotFound);
+    }
+}
+
+public class GoogleDriveTests
+{
+    private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web) { Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) } };
+
+    private static MultipartFormDataContent Photo(byte[] bytes, string caption)
+    {
+        var form = new MultipartFormDataContent();
+        var img = new ByteArrayContent(bytes);
+        img.Headers.ContentType = new MediaTypeHeaderValue("image/jpeg");
+        form.Add(img, "photo", "p.jpg");
+        form.Add(new StringContent("data:image/jpeg;base64,AAAA"), "thumbnail");
+        form.Add(new StringContent(caption), "caption");
+        return form;
+    }
+
+    [Fact]
+    public async Task Photos_go_to_google_drive_once_connected()
+    {
+        var google = new FakeGoogle();
+        await using var f = new AmmaFactory().WithWebHostBuilder(b =>
+        {
+            b.UseSetting("SignIn:Mode", "pin"); b.UseSetting("SignIn:SharedAccount", "true"); b.UseSetting("SignIn:SetupCode", "our-family-secret");
+            b.UseSetting("Otp:AllowedDestinations:0", "9800000041");
+            b.UseSetting("App:PublicUrl", "https://amma.example.com");
+            b.ConfigureServices(s => s.AddHttpClient("google").ConfigurePrimaryHttpMessageHandler(() => google));
+        });
+        var c = f.CreateClient();
+        var a = await (await c.PostAsJsonAsync("/api/v1/auth/pin/setup", new { destination = "9800000041", setupCode = "our-family-secret", pin = "2468", name = "Priya" })).Content.ReadFromJsonAsync<AuthResponse>(Json);
+        c.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", a!.AccessToken);
+
+        // A photo saved before Drive is connected stays on the server.
+        (await c.PostAsync("/api/v1/memories", Photo([1, 2, 3], "before"))).EnsureSuccessStatusCode();
+
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, (await c.PutAsJsonAsync("/api/v1/drive/config", new { clientId = "nope", clientSecret = "s3cret-value-123" })).StatusCode);
+        (await c.PutAsJsonAsync("/api/v1/drive/config", new { clientId = "123-abc.apps.googleusercontent.com", clientSecret = "s3cret-value-123" })).EnsureSuccessStatusCode();
+        var url = (await c.GetFromJsonAsync<JsonElement>("/api/v1/drive/connect-url")).GetProperty("url").GetString()!;
+        Assert.Contains("scope=" + Uri.EscapeDataString("https://www.googleapis.com/auth/drive.file"), url);
+        Assert.Contains(Uri.EscapeDataString("https://amma.example.com/api/v1/drive/callback"), url);
+        var state = System.Web.HttpUtility.ParseQueryString(new Uri(url).Query)["state"]!;
+
+        // A forged state is refused; the real one connects.
+        var bad = await f.CreateClient().GetStringAsync($"/api/v1/drive/callback?code=x&state={Uri.EscapeDataString(state[..^2] + "zz")}");
+        Assert.Contains("expired", bad);
+        var page = await f.CreateClient().GetStringAsync($"/api/v1/drive/callback?code=abc&state={Uri.EscapeDataString(state)}");
+        Assert.Contains("Google Drive connected", page);
+        var st = (await c.GetFromJsonAsync<Amma.Api.Controllers.DriveStatus>("/api/v1/drive", Json))!;
+        Assert.True(st.Connected);
+        Assert.Equal("family@example.com", st.Email);
+        Assert.Equal(1, st.PhotosOnServer);
+
+        // New photos go to Drive and load back from it.
+        var m = await (await c.PostAsync("/api/v1/memories", Photo([9, 9, 9, 9], "after"))).Content.ReadFromJsonAsync<MemoryDto>(Json);
+        Assert.Single(google.Files);
+        Assert.Equal(new byte[] { 9, 9, 9, 9 }, await c.GetByteArrayAsync($"/api/v1/memories/{m!.Id}/photo"));
+
+        // Existing server photos can be moved.
+        var moved = await (await c.PostAsync("/api/v1/drive/move-existing", null)).Content.ReadFromJsonAsync<Amma.Api.Controllers.MoveResult>(Json);
+        Assert.Equal(1, moved!.Moved);
+        Assert.Equal(0, moved.Remaining);
+        Assert.Equal(2, google.Files.Count);
+        Assert.Equal(1, google.Folders);
+
+        Assert.Equal(HttpStatusCode.NoContent, (await c.DeleteAsync($"/api/v1/memories/{m.Id}")).StatusCode);
+        Assert.Single(google.Files);
+    }
+}

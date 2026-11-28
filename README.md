@@ -86,7 +86,7 @@ Five tabs, for two people tracking one pregnancy (each signs in on their own pho
 - **Today**: water, meals, snacks, juice and tablet reminders. Each one rings **on both phones** with a chime. Either person taps **Done** and both see "Done by …". If nobody does, both phones ring again 15 minutes later.
 - **Weight**: one reading a day, with a chart and history.
 - **Checkups**: hospital appointments (reminded the day before and 2 hours before) and the report vault.
-- **Memories**: photos for the pregnancy and after. They are resized on the phone and shared with both.
+- **Memories**: photos for the pregnancy and after. They are resized on the phone and shared with both. Optionally connect **Google Drive** (Settings → Save photos to Google Drive): full-size photos then go to an "Amma Memories" folder in your Drive (15 GB free), with only small previews kept on the server. Amma uses the `drive.file` permission, so it can only see the files it created.
 - **Settings**: your name, reminder times, a sound test, PIN, pregnancy dates and app updates.
 
 Reminders are scheduled on each phone a week ahead and refreshed whenever the app opens, so they ring even offline. Phones learn that the other person tapped Done the next time Amma is opened (or within 30 seconds while it is open).

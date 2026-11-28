@@ -9,7 +9,7 @@ namespace Amma.Api.Controllers;
 
 /// <summary>Photo memories. The app resizes photos before upload; a small thumbnail is kept inline for offline viewing.</summary>
 [Route("api/v1/memories")]
-public class MemoriesController(IFileStorage storage) : ApiControllerBase
+public class MemoriesController(IFileStorage storage, Amma.Api.Services.GoogleDrive drive, ILogger<MemoriesController> log) : ApiControllerBase
 {
     private const long MaxBytes = 8 * 1024 * 1024;
 
@@ -30,11 +30,32 @@ public class MemoriesController(IFileStorage storage) : ApiControllerBase
         var date = takenOn ?? today;
         var p = await ActivePregnancyAsync(ct);
         int? week = p is null ? null : PregnancyCalculator.Calculate(p.Lmp, date).Weeks;
-        await using var s = photo.OpenReadStream();
+        // Full-size photo goes to the family's Google Drive when connected; otherwise (or if Drive fails) to the server.
+        string key;
+        var conn = await drive.GetAsync(UserId, ct);
+        if (Amma.Api.Services.GoogleDrive.IsConnected(conn))
+        {
+            try
+            {
+                await using var ds = photo.OpenReadStream();
+                key = Amma.Api.Services.GoogleDrive.KeyPrefix + await drive.UploadAsync(conn!, ds, $"{date:yyyy-MM-dd} {(string.IsNullOrWhiteSpace(caption) ? "Amma" : caption.Trim())}.jpg", ct);
+            }
+            catch (Exception ex)
+            {
+                log.LogWarning(ex, "Drive upload failed; keeping the photo on the server");
+                await using var fs = photo.OpenReadStream();
+                key = await storage.SaveAsync(fs, ct);
+            }
+        }
+        else
+        {
+            await using var fs = photo.OpenReadStream();
+            key = await storage.SaveAsync(fs, ct);
+        }
         var m = new MemoryPhoto
         {
             UserId = UserId, TakenOn = date, Caption = string.IsNullOrWhiteSpace(caption) ? null : caption.Trim()[..Math.Min(caption.Trim().Length, 300)],
-            PregnancyWeek = week is > 0 and <= 42 ? week : null, PhotoKey = await storage.SaveAsync(s, ct), ThumbnailDataUrl = thumbnail,
+            PregnancyWeek = week is > 0 and <= 42 ? week : null, PhotoKey = key, ThumbnailDataUrl = thumbnail,
             SizeBytes = photo.Length, ByName = await PersonNameAsync(ct),
         };
         Db.MemoryPhotos.Add(m);
@@ -47,7 +68,7 @@ public class MemoriesController(IFileStorage storage) : ApiControllerBase
     {
         var m = await Db.MemoryPhotos.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id && x.UserId == UserId, ct);
         if (m is null) return NotFound();
-        return File(await storage.OpenAsync(m.PhotoKey, ct), "image/jpeg", $"amma-{m.TakenOn:yyyy-MM-dd}.jpg");
+        return File(await OpenAsync(m.PhotoKey, ct), "image/jpeg", $"amma-{m.TakenOn:yyyy-MM-dd}.jpg");
     }
 
     [HttpPatch("{id:guid}")]
@@ -65,10 +86,23 @@ public class MemoriesController(IFileStorage storage) : ApiControllerBase
     {
         var m = await Db.MemoryPhotos.FirstOrDefaultAsync(x => x.Id == id && x.UserId == UserId, ct);
         if (m is null) return NotFound();
-        await storage.DeleteAsync(m.PhotoKey, ct);
+        if (m.PhotoKey.StartsWith(Amma.Api.Services.GoogleDrive.KeyPrefix))
+        {
+            var conn = await drive.GetAsync(UserId, ct);
+            if (Amma.Api.Services.GoogleDrive.IsConnected(conn)) await drive.DeleteAsync(conn!, m.PhotoKey[Amma.Api.Services.GoogleDrive.KeyPrefix.Length..], ct);
+        }
+        else await storage.DeleteAsync(m.PhotoKey, ct);
         Db.MemoryPhotos.Remove(m);
         await Db.SaveChangesAsync(ct);
         return NoContent();
+    }
+
+    private async Task<Stream> OpenAsync(string key, CancellationToken ct)
+    {
+        if (!key.StartsWith(Amma.Api.Services.GoogleDrive.KeyPrefix)) return await storage.OpenAsync(key, ct);
+        var conn = await drive.GetAsync(UserId, ct);
+        if (!Amma.Api.Services.GoogleDrive.IsConnected(conn)) throw new InvalidOperationException("Reconnect Google Drive in Settings to see full-size photos.");
+        return await drive.DownloadAsync(conn!, key[Amma.Api.Services.GoogleDrive.KeyPrefix.Length..], ct);
     }
 
     private static MemoryDto ToDto(MemoryPhoto m) => new(m.Id, m.TakenOn, m.Caption, m.PregnancyWeek, m.ThumbnailDataUrl, m.SizeBytes, m.ByName, m.CreatedAt);
