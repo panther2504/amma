@@ -2,7 +2,7 @@ name: Android app
 
 # Builds the Amma Android app (APK) and publishes it as the "android-latest" release.
 # Repository settings needed:
-#   Variables: AMMA_API_URL                 e.g. https://amma.onrender.com
+#   Variables: AMMA_API_URL                 optional; defaults to the family server below
 #   Secrets:   ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD   (keeps the same signature so updates install over the old app)
 on:
   workflow_dispatch:
@@ -11,6 +11,10 @@ on:
 
 permissions:
   contents: write
+
+env:
+  # The family's Render server. Override with the repository variable AMMA_API_URL.
+  API_URL: ${{ vars.AMMA_API_URL || 'https://amma-0j6j.onrender.com' }}
 
 jobs:
   apk:
@@ -32,7 +36,7 @@ jobs:
 
       - name: Check settings
         env:
-          API: ${{ vars.AMMA_API_URL }}
+          API: ${{ env.API_URL }}
           KS: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
           if [ -z "$API" ]; then echo "::warning::Repository variable AMMA_API_URL is not set yet: building a test APK only (not published)."; fi
@@ -41,7 +45,7 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - name: Build web app
         env:
-          VITE_API_BASE: ${{ vars.AMMA_API_URL }}
+          VITE_API_BASE: ${{ env.API_URL }}
         run: npx tsc -b && npx vite build
       - run: npx cap sync android
 
@@ -64,7 +68,6 @@ jobs:
         run: ./gradlew --no-daemon assembleRelease && cp app/build/outputs/apk/release/app-release.apk ../Amma.apk
 
       - name: Publish
-        if: ${{ vars.AMMA_API_URL != '' }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
