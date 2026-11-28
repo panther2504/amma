@@ -401,6 +401,15 @@ public class AppReleaseTests
     }
 
     [Fact]
+    public void Parses_version_json_published_next_to_the_apk()
+    {
+        var r = Amma.Api.Controllers.AppReleaseController.ParseVersionJson("""{"versionCode":4,"versionName":"1.0.4","notes":"Built from abc"}""", "panther2504/amma")!;
+        Assert.Equal(4, r.VersionCode);
+        Assert.Equal("https://github.com/panther2504/amma/releases/download/android-latest/Amma.apk", r.DownloadUrl);
+        Assert.Null(Amma.Api.Controllers.AppReleaseController.ParseVersionJson("not json", "x/y"));
+    }
+
+    [Fact]
     public void Release_without_version_is_ignored() =>
         Assert.Null(Amma.Api.Controllers.AppReleaseController.ParseRelease("""{"body":"old build","assets":[]}"""));
 

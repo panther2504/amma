@@ -41,21 +41,38 @@ public partial class AppReleaseController(IHttpClientFactory http, IMemoryCache 
         var release = await cache.GetOrCreateAsync("android-release", async e =>
         {
             e.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5);
+            var client = http.CreateClient("github");
             try
             {
-                var client = http.CreateClient("github");
-                using var res = await client.GetAsync($"https://api.github.com/repos/{_o.GitHubRepo}/releases/tags/android-latest", ct);
-                if (!res.IsSuccessStatusCode) { e.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1); return null; }
-                return ParseRelease(await res.Content.ReadAsStringAsync(ct));
+                // Release files are served from github.com (not the rate-limited API), so this works from shared hosts.
+                using var res = await client.GetAsync($"https://github.com/{_o.GitHubRepo}/releases/download/android-latest/version.json", ct);
+                if (res.IsSuccessStatusCode && ParseVersionJson(await res.Content.ReadAsStringAsync(ct), _o.GitHubRepo) is { } fromFile) return fromFile;
+
+                using var api = await client.GetAsync($"https://api.github.com/repos/{_o.GitHubRepo}/releases/tags/android-latest", ct);
+                if (api.IsSuccessStatusCode && ParseRelease(await api.Content.ReadAsStringAsync(ct)) is { } fromApi) return fromApi;
+                log.LogWarning("Could not read the Android release (version.json {File}, API {Api})", (int)res.StatusCode, (int)api.StatusCode);
             }
-            catch (Exception ex)
-            {
-                log.LogWarning(ex, "Could not read the Android release from GitHub");
-                e.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
-                return null;
-            }
+            catch (Exception ex) { log.LogWarning(ex, "Could not read the Android release from GitHub"); }
+            e.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
+            return null;
         });
         return release is null ? NotFound() : release;
+    }
+
+    /// <summary>Reads the version.json file published next to the APK: {"versionCode":4,"versionName":"1.0.4","notes":"..."}.</summary>
+    public static AndroidRelease? ParseVersionJson(string json, string repo)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            var r = doc.RootElement;
+            if (!r.TryGetProperty("versionCode", out var code) || !code.TryGetInt32(out var vc)) return null;
+            var name = r.TryGetProperty("versionName", out var n) ? n.GetString() ?? $"1.0.{vc}" : $"1.0.{vc}";
+            var notes = r.TryGetProperty("notes", out var t) ? t.GetString() : null;
+            DateTimeOffset? published = r.TryGetProperty("publishedAt", out var p) && p.ValueKind == JsonValueKind.String && DateTimeOffset.TryParse(p.GetString(), out var d) ? d : null;
+            return new AndroidRelease(vc, name, $"https://github.com/{repo}/releases/download/android-latest/Amma.apk", notes, published);
+        }
+        catch (JsonException) { return null; }
     }
 
     /// <summary>Reads version and download link from the GitHub release JSON (the notes contain "versionCode: N").</summary>

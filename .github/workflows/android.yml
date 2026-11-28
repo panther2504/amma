@@ -91,8 +91,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          printf '{"versionCode":%s,"versionName":"1.0.%s","notes":"Built from %s","publishedAt":"%s"}' \
+            "$GITHUB_RUN_NUMBER" "$GITHUB_RUN_NUMBER" "${GITHUB_SHA::7}" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > version.json
           gh release delete android-latest -y --cleanup-tag || true
-          gh release create android-latest Amma.apk --prerelease --target "$GITHUB_SHA" \
+          gh release create android-latest Amma.apk version.json --prerelease --target "$GITHUB_SHA" \
             --title "Amma Android app 1.0.${GITHUB_RUN_NUMBER}" \
             --notes "$(printf 'Built from %s. Open this page on your phone, download Amma.apk and install it. Later versions update from inside the app.\nversionCode: %s\nversionName: 1.0.%s' "${GITHUB_SHA::7}" "$GITHUB_RUN_NUMBER" "$GITHUB_RUN_NUMBER")"
       - uses: actions/upload-artifact@v4
