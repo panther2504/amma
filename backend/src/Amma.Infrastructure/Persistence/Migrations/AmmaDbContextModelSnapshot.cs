@@ -225,6 +225,98 @@ namespace Amma.Infrastructure.Persistence.Migrations
                     b.ToTable("MedicationLogs");
                 });
 
+            modelBuilder.Entity("Amma.Domain.Care.Reminder", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer");
+
+                    b.PrimitiveCollection<List<TimeOnly>>("Times")
+                        .IsRequired()
+                        .HasColumnType("time without time zone[]");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "IsActive");
+
+                    b.ToTable("Reminders");
+                });
+
+            modelBuilder.Entity("Amma.Domain.Care.ReminderLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("ByLoginId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ByName")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date");
+
+                    b.Property<Guid>("ReminderId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<TimeOnly>("Time")
+                        .HasColumnType("time without time zone");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "Date");
+
+                    b.HasIndex("ReminderId", "Date", "Time")
+                        .IsUnique();
+
+                    b.ToTable("ReminderLogs");
+                });
+
             modelBuilder.Entity("Amma.Domain.Content.Article", b =>
                 {
                     b.Property<Guid>("Id")
@@ -774,6 +866,55 @@ namespace Amma.Infrastructure.Persistence.Migrations
                     b.HasIndex("UserId", "DocumentDate");
 
                     b.ToTable("MedicalDocuments");
+                });
+
+            modelBuilder.Entity("Amma.Domain.Documents.MemoryPhoto", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ByName")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("Caption")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("PhotoKey")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<int?>("PregnancyWeek")
+                        .HasColumnType("integer");
+
+                    b.Property<long>("SizeBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateOnly>("TakenOn")
+                        .HasColumnType("date");
+
+                    b.Property<string>("ThumbnailDataUrl")
+                        .IsRequired()
+                        .HasMaxLength(200000)
+                        .HasColumnType("character varying(200000)");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "TakenOn");
+
+                    b.ToTable("MemoryPhotos");
                 });
 
             modelBuilder.Entity("Amma.Domain.Family.FamilyMember", b =>
@@ -1364,6 +1505,10 @@ namespace Amma.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(254)
                         .HasColumnType("character varying(254)");
+
+                    b.Property<string>("DisplayName")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
 
                     b.Property<int>("FailedPinAttempts")
                         .HasColumnType("integer");

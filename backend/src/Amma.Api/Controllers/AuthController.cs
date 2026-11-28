@@ -119,6 +119,8 @@ public class AuthController(AmmaDbContext db, TokenService tokens, IOtpSender se
         if (login is null) db.LoginIdentities.Add(login = new LoginIdentity { UserId = user.Id, Destination = dest });
         login.UserId = user.Id;
         login.PinHash = PinHasher.HashPassword(user, req.Pin);
+        if (!string.IsNullOrWhiteSpace(req.Name)) login.DisplayName = req.Name.Trim();
+        if (isNew && !string.IsNullOrWhiteSpace(req.Name)) user.Name = req.Name.Trim();
         login.FailedPinAttempts = 0;
         return await PinSignedInAsync(user, login, isNew, ct);
     }

@@ -68,3 +68,13 @@ export interface AssistantMessage { id: string; role: 'user' | 'assistant'; cont
 export interface AskResponse { question: AssistantMessage; answer: AssistantMessage; suggestions: string[] }
 
 export interface Dashboard { user: User; pregnancy?: Pregnancy | null; week?: Week | null; tipOfTheDay?: string | null; todaysMedicines: Dose[]; water: Water; nextAppointment?: Appointment | null; meals: Meal[]; checklist: Checklist; unreadNotifications: number }
+
+// ---- Family reminders, weight & memories
+export type ReminderKind = 'water' | 'meal' | 'snack' | 'juice' | 'tablet' | 'other'
+export type ReminderStatus = 'done' | 'skipped'
+export interface Reminder { id: string; kind: ReminderKind; title: string; note?: string | null; times: string[]; isActive: boolean; sortOrder: number }
+export interface SaveReminder { kind: ReminderKind; title: string; note?: string | null; times: string[] }
+export interface Occurrence { reminderId: string; kind: ReminderKind; title: string; note?: string | null; time: string; status?: ReminderStatus | null; byName?: string | null; at?: string | null }
+export interface Day { date: string; items: Occurrence[]; done: number; total: number }
+export interface Person { name: string; phone?: string | null; pinLogin: boolean }
+export interface Memory { id: string; takenOn: string; caption?: string | null; pregnancyWeek?: number | null; thumbnail: string; sizeBytes: number; byName?: string | null; createdAt: string }

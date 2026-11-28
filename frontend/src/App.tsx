@@ -2,49 +2,36 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { useQueryClient } from '@tanstack/react-query'
 import { OfflineError, cachedUser, get, hasStoredSession, logout, onOutboxChange, onSignedOut, refreshSession } from './api/client'
 import { flushOutbox, pendingCount } from './lib/sync'
-import { onReminderTap, syncReminders } from './lib/reminders'
+import { CHANNEL, clearOccurrence, prepareNotifications, scheduleAll, snooze } from './lib/reminders'
 import { checkForUpdate, dueForCheck } from './lib/updates'
 import { UpdateSheet } from './ui/UpdateSheet'
-import { useAppointments, useMedications, useNotificationPrefs } from './api/hooks'
+import { useAppointments, useDay, useReminders } from './api/hooks'
 import { isNative } from './lib/localdb'
 import { App as NativeApp } from '@capacitor/app'
-import type { AuthResponse, User } from './api/types'
-import { translate } from './lib/i18n'
-import { AppContext, useApp as useAppCtx, usePages, useSheet, PageStack, SheetProvider, ToastProvider, stagger, useRipple, type PageRenderer } from './ui/shell'
+import { LocalNotifications } from '@capacitor/local-notifications'
+import type { AuthResponse, Day, User } from './api/types'
+import { AppContext, useApp as useAppCtx, useSheet, PageStack, SheetProvider, ToastProvider, stagger, useRipple, type PageRenderer } from './ui/shell'
 import { Icon, type IconName } from './ui/Icon'
 import { Onboarding, Splash } from './screens/Intro'
 import { Login } from './screens/Login'
 import { Setup } from './screens/Setup'
-import { SharedHome } from './screens/Shared'
-import { HomeTab } from './tabs/Home'
-import { BabyTab } from './tabs/Baby'
-import { CareTab } from './tabs/Care'
-import { LearnTab } from './tabs/Learn'
-import { ProfileTab } from './tabs/Profile'
-import { FoodPage } from './pages/Food'
-import { MedsPage } from './pages/Meds'
-import { AppointmentsPage } from './pages/Appointments'
-import { HealthPage } from './pages/Health'
-import { KickPage } from './pages/Kick'
-import { BagPage, ExercisePage } from './pages/Lifestyle'
-import { ChatPage } from './pages/Chat'
-import { ArticlePage } from './pages/Article'
-import { ReportsPage } from './pages/Reports'
-import { FamilyPage } from './pages/Family'
-import { ContactsPage, EmergencyPage } from './pages/Emergency'
-import { PregnancyPage, PrivacyPage, SettingsPage } from './pages/Account'
+import { TodayTab } from './tabs/Today'
+import { WeightTab } from './tabs/Weight'
+import { CheckupsTab } from './tabs/Checkups'
+import { MemoriesTab } from './tabs/Memories'
+import { SettingsTab } from './tabs/Settings'
+import { RemindersPage } from './pages/RemindersEdit'
+import { PregnancyPage } from './pages/Account'
+import { queuePost } from './api/client'
+import { translate } from './lib/i18n'
 
 const PAGES: Record<string, PageRenderer> = {
-  food: () => <FoodPage />, meds: () => <MedsPage />, appts: () => <AppointmentsPage />, health: () => <HealthPage />,
-  kick: () => <KickPage />, exercise: () => <ExercisePage />, bag: () => <BagPage />, chat: () => <ChatPage />,
-  article: slug => <ArticlePage slug={slug} />, reports: () => <ReportsPage />, family: () => <FamilyPage />,
-  emergency: () => <EmergencyPage />, contacts: () => <ContactsPage />, pregnancy: () => <PregnancyPage />,
-  settings: () => <SettingsPage />, privacy: () => <PrivacyPage />,
+  reminders: () => <RemindersPage />,
+  pregnancy: () => <PregnancyPage />,
 }
 
 type Stage = 'splash' | 'onboard' | 'login' | 'setup' | 'app'
 const SEEN_ONBOARDING = 'amma.onboarded'
-const isFamilyOnly = (u: User) => !u.hasPregnancy && (u.role === 'partner' || u.role === 'familyViewer')
 
 export default function App() {
   const qc = useQueryClient()
@@ -52,7 +39,7 @@ export default function App() {
   const [user, setUser] = useState<User | null>(null)
   useRipple()
 
-  const enter = useCallback((u: User) => { setUser(u); setStage(u.hasPregnancy || isFamilyOnly(u) ? 'app' : 'setup') }, [])
+  const enter = useCallback((u: User) => { setUser(u); setStage(u.hasPregnancy ? 'app' : 'setup') }, [])
 
   // Boot: show the splash briefly while restoring the session.
   useEffect(() => {
@@ -88,7 +75,7 @@ export default function App() {
           {stage === 'app' && ctx && (
             <AppContext.Provider value={ctx}>
               <SyncManager />
-              <PageStack pages={PAGES}><DeviceReminders /><UpdateChecker /><Shell familyOnly={isFamilyOnly(ctx.user)} /></PageStack>
+              <PageStack pages={PAGES}><ReminderBridge /><UpdateChecker /><Shell /></PageStack>
             </AppContext.Provider>
           )}
         </SheetProvider></ToastProvider></div>
@@ -97,17 +84,17 @@ export default function App() {
   )
 }
 
-const TABS: { key: string; icon: IconName }[] = [
-  { key: 'home', icon: 'home' }, { key: 'baby', icon: 'baby' }, { key: 'care', icon: 'care' }, { key: 'learn', icon: 'learn' }, { key: 'profile', icon: 'profile' },
+const TABS: { key: string; icon: IconName; label: string }[] = [
+  { key: 'today', icon: 'bell', label: 'Today' }, { key: 'weight', icon: 'scale', label: 'Weight' }, { key: 'checkups', icon: 'cal', label: 'Checkups' },
+  { key: 'memories', icon: 'camera', label: 'Memories' }, { key: 'settings', icon: 'sliders', label: 'Settings' },
 ]
 
-function Shell({ familyOnly }: { familyOnly: boolean }) {
-  const [tab, setTab] = useState('home')
+function Shell() {
+  const [tab, setTab] = useState('today')
   const view = useRef<HTMLElement>(null)
   const nav = useRef<HTMLElement>(null)
   const pill = useRef<HTMLSpanElement>(null)
-  const tabs = familyOnly ? TABS.filter(t => ['home', 'learn', 'profile'].includes(t.key)) : TABS
-  const t = (k: string) => translate((document.documentElement.lang as 'en' | 'ta') || 'en', k as never)
+  const tabs = TABS
 
   const go = useCallback((k: string) => {
     if (k === tab) { view.current?.scrollTo({ top: 0, behavior: 'smooth' }); return }
@@ -135,17 +122,17 @@ function Shell({ familyOnly }: { familyOnly: boolean }) {
   return (
     <section id="app" className="layer">
       <main ref={view} className="view scroll">
-        {tab === 'home' && (familyOnly ? <SharedHome /> : <HomeTab go={go} />)}
-        {tab === 'baby' && <BabyTab />}
-        {tab === 'care' && <CareTab />}
-        {tab === 'learn' && <LearnTab />}
-        {tab === 'profile' && <ProfileTab />}
+        {tab === 'today' && <TodayTab go={go} />}
+        {tab === 'weight' && <WeightTab />}
+        {tab === 'checkups' && <CheckupsTab />}
+        {tab === 'memories' && <MemoriesTab />}
+        {tab === 'settings' && <SettingsTab />}
       </main>
       <nav className="nav" ref={nav} aria-label="Main">
         <span className="nav-pill" ref={pill} />
         {tabs.map(x => (
           <button key={x.key} data-tab={x.key} className={tab === x.key ? 'on' : ''} aria-current={tab === x.key ? 'page' : undefined} onClick={() => go(x.key)}>
-            <Icon name={x.icon} size={22} /><span>{t(x.key)}</span>
+            <Icon name={x.icon} size={22} /><span>{x.label}</span>
           </button>
         ))}
       </nav>
@@ -160,9 +147,8 @@ function SyncManager() {
   useEffect(() => {
     // Load every main screen's data while online so all of it is saved on the phone for offline use.
     const warm = () => {
-      const pre: [string[], string][] = [[['content', lang], `/content/bundle?lang=${lang}`], [['doses'], '/medications/doses'], [['meds'], '/medications'],
-        [['appts'], '/appointments'], [['health'], '/health/summary'], [['kicks'], '/health/kick-sessions'], [['bag'], '/tracking/hospital-bag'],
-        [['pregnancy'], '/pregnancy'], [['contacts'], '/me/emergency-contacts'], [['prefs'], '/notifications/preferences']]
+      const pre: [string[], string][] = [[['reminders'], '/reminders'], [['day'], '/reminders/day'], [['appts'], '/appointments'], [['docs'], '/documents'],
+        [['health'], '/health/summary'], [['memories'], '/memories'], [['pregnancy'], '/pregnancy'], [['person'], '/me/person']]
       pre.forEach(([key, path]) => qc.prefetchQuery({ queryKey: key, queryFn: () => get(path), staleTime: 60_000 }).catch(() => {}))
     }
     const run = () => { flushOutbox(qc).then(warm).catch(() => {}) }
@@ -175,16 +161,51 @@ function SyncManager() {
   return null
 }
 
-/** Keeps the phone's scheduled reminders in step with medicines, appointments and notification settings. */
-function DeviceReminders() {
-  const meds = useMedications()
+/**
+ * Keeps this phone's reminders in step with the shared schedule:
+ * - schedules 7 days of reminders (with sound) whenever reminders, today's progress or appointments change,
+ * - handles the notification buttons (Done / Snooze) even offline,
+ * - when the other phone marks something done, removes it from this phone too.
+ */
+function ReminderBridge() {
+  const qc = useQueryClient()
+  const reminders = useReminders()
+  const day = useDay()
   const appts = useAppointments()
-  const prefs = useNotificationPrefs()
-  const { open } = usePages()
-  useEffect(() => onReminderTap(open), [open])
+
+  // What's done today, as a compact key, so we only reschedule when something actually changes.
+  const doneKey = (day.data?.items ?? []).filter(i => i.status).map(i => i.reminderId + i.time).join(',')
+  const remKey = JSON.stringify(reminders.data ?? null)
+  const apptKey = JSON.stringify((appts.data ?? []).map(a => [a.id, a.date, a.time, a.status, a.reminderMinutesBefore]))
+  const prevDone = useRef<Set<string>>(new Set())
+
   useEffect(() => {
-    if (meds.data && appts.data) syncReminders(meds.data, appts.data, prefs.data).catch(e => console.warn('reminders', e))
-  }, [meds.data, appts.data, prefs.data])
+    if (!reminders.data) return
+    scheduleAll(reminders.data, day.data, appts.data ?? []).catch(e => console.warn('schedule', e))
+    // Anything newly marked done (here or on the other phone) is cleared from the notification tray.
+    const now = new Set((day.data?.items ?? []).filter(i => i.status).map(i => `${i.reminderId}|${i.time.slice(0, 5)}`))
+    now.forEach(k => { if (!prevDone.current.has(k)) { const [id, t] = k.split('|'); clearOccurrence(id, t) } })
+    prevDone.current = now
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [remKey, doneKey, apptKey])
+
+  useEffect(() => {
+    if (!isNative()) return
+    prepareNotifications().catch(() => {})
+    const action = LocalNotifications.addListener('localNotificationActionPerformed', async e => {
+      const x = e.notification.extra as { type?: string; reminderId?: string; time?: string; date?: string } | undefined
+      if (x?.type !== 'reminder' || !x.reminderId || !x.time) return
+      if (e.actionId === 'snooze') { await snooze({ ...e.notification, channelId: CHANNEL }); return }
+      if (e.actionId === 'done') {
+        await clearOccurrence(x.reminderId, x.time)
+        qc.setQueryData<Day>(['day'], d => d && { ...d, items: d.items.map(i => (i.reminderId === x.reminderId && i.time.startsWith(x.time!) ? { ...i, status: 'done', byName: 'You' } : i)) })
+        await queuePost(`/reminders/${x.reminderId}/log`, { date: x.date, time: x.time, status: 'done' }).catch(() => {})
+      }
+      qc.invalidateQueries({ queryKey: ['day'] })
+    })
+    const resume = NativeApp.addListener('resume', () => { qc.invalidateQueries({ queryKey: ['day'] }); qc.invalidateQueries({ queryKey: ['reminders'] }) })
+    return () => { action.then(h => h.remove()); resume.then(h => h.remove()) }
+  }, [qc])
   return null
 }
 

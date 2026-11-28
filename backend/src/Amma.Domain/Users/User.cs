@@ -33,6 +33,8 @@ public class LoginIdentity : Entity, IUserOwned
 {
     public Guid UserId { get; set; }
     public string Destination { get; set; } = "";
+    /// <summary>The person's name, shown as "Done by …" on the other phone.</summary>
+    public string? DisplayName { get; set; }
     /// <summary>PBKDF2 hash of this person's PIN.</summary>
     public string? PinHash { get; set; }
     public int FailedPinAttempts { get; set; }

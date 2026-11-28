@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { Icon } from './Icon'
+import { Icon, type IconName } from './Icon'
 import type { FoodSafety } from '../api/types'
 
 export const SAFETY: Record<FoodSafety, [string, string]> = {
@@ -90,4 +90,8 @@ export function SecHead({ title, action, onAction, right }: { title: string; act
 
 export function Skeleton({ h = 120, mt = 12 }: { h?: number; mt?: number }) {
   return <div className="skeleton" style={{ height: h, marginTop: mt }} aria-hidden="true" />
+}
+
+export function MenuItem({ c, i, label, onClick }: { c: string; i: IconName; label: string; onClick: () => void }) {
+  return <button className="mi" onClick={onClick}><span className={`ico ${c}`}><Icon name={i} size={19} /></span><b>{label}</b><span className="chev"><Icon name="chev" size={18} /></span></button>
 }

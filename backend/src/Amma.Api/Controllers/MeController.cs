@@ -32,6 +32,24 @@ public class MeController(AuditService audit, IFileStorage storage) : ApiControl
         return me.ToDto(await ActivePregnancyAsync(ct) is not null);
     }
 
+    /// <summary>The person on this phone (PIN mode): their name and number.</summary>
+    [HttpGet("person")]
+    public async Task<PersonDto> Person(CancellationToken ct)
+    {
+        var login = LoginId is { } lid ? await Db.LoginIdentities.AsNoTracking().FirstOrDefaultAsync(l => l.Id == lid, ct) : null;
+        return new PersonDto(await PersonNameAsync(ct), login?.Destination, login is not null);
+    }
+
+    [HttpPut("person")]
+    public async Task<ActionResult<PersonDto>> SetPerson(SetPersonRequest req, CancellationToken ct)
+    {
+        var login = LoginId is { } lid ? await Db.LoginIdentities.FirstOrDefaultAsync(l => l.Id == lid && l.UserId == UserId, ct) : null;
+        if (login is null) return Problem422("Only available when signed in with a PIN.");
+        login.DisplayName = req.Name.Trim();
+        await Db.SaveChangesAsync(ct);
+        return new PersonDto(login.DisplayName, login.Destination, true);
+    }
+
     /// <summary>Changes the signed-in person's own PIN (PIN sign-in mode).</summary>
     [HttpPut("pin")]
     public async Task<IActionResult> ChangePin(ChangePinRequest req, CancellationToken ct)
@@ -181,6 +199,8 @@ public class MeController(AuditService audit, IFileStorage storage) : ApiControl
         await RemoveAll<Domain.Tracking.KickSession>(id, ct); await RemoveAll<Domain.Tracking.HospitalBagCheck>(id, ct); await RemoveAll<FamilyMember>(id, ct);
         await RemoveAll<Domain.Documents.MedicalDocument>(id, ct); await RemoveAll<Notification>(id, ct); await RemoveAll<NotificationPreference>(id, ct);
         await RemoveAll<Domain.Assistant.AssistantMessage>(id, ct);
+        foreach (var mp in await Db.MemoryPhotos.Where(x => x.UserId == id).ToListAsync(ct)) await storage.DeleteAsync(mp.PhotoKey, ct);
+        await RemoveAll<Domain.Documents.MemoryPhoto>(id, ct); await RemoveAll<Domain.Care.Reminder>(id, ct); await RemoveAll<Domain.Care.ReminderLog>(id, ct);
         foreach (var link in await Db.FamilyMembers.Where(f => f.MemberUserId == id).ToListAsync(ct)) { link.MemberUserId = null; link.Status = FamilyMemberStatus.Revoked; }
 
         var me = await MeAsync(ct);

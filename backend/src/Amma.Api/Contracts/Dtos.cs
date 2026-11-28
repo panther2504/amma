@@ -16,7 +16,7 @@ public record OtpVerifyRequest([Required] string Destination, [Required, StringL
 public record AuthConfigResponse(string Mode);
 public record PinStatusRequest([Required, MaxLength(254)] string Destination);
 public record PinStatusResponse(bool HasPin);
-public record PinSetupRequest([Required, MaxLength(254)] string Destination, [Required, MaxLength(128)] string SetupCode, [Required, RegularExpression(@"^\d{4,8}$")] string Pin);
+public record PinSetupRequest([Required, MaxLength(254)] string Destination, [Required, MaxLength(128)] string SetupCode, [Required, RegularExpression(@"^\d{4,8}$")] string Pin, [MaxLength(60)] string? Name = null);
 public record PinLoginRequest([Required, MaxLength(254)] string Destination, [Required, MaxLength(8)] string Pin);
 public record ChangePinRequest([Required, MaxLength(8)] string CurrentPin, [Required, RegularExpression(@"^\d{4,8}$")] string NewPin);
 public record RefreshRequest([Required] string RefreshToken);
@@ -31,6 +31,19 @@ public record EmergencyContactDto(Guid Id, string Name, string Relation, string 
 public record SaveEmergencyContactRequest([Required, MaxLength(120)] string Name, [MaxLength(60)] string? Relation, [Required, MaxLength(20)] string Phone, bool IsPrimary, bool NotifyInEmergency = true);
 public record EmergencyAlertRequest(double? Latitude, double? Longitude, bool ShareLocation);
 public record EmergencyAlertResponse(int NotifiedCount, IReadOnlyList<string> Notified);
+
+public record PersonDto(string Name, string? Phone, bool PinLogin);
+public record SetPersonRequest([Required, MinLength(1), MaxLength(60)] string Name);
+
+// ---------- Reminders ----------
+public record ReminderDto(Guid Id, ReminderKind Kind, string Title, string? Note, IReadOnlyList<TimeOnly> Times, bool IsActive, int SortOrder);
+public record SaveReminderRequest(ReminderKind Kind, [Required, MaxLength(80)] string Title, [MaxLength(200)] string? Note, [Required, MinLength(1), MaxLength(24)] List<TimeOnly> Times);
+public record OccurrenceDto(Guid ReminderId, ReminderKind Kind, string Title, string? Note, TimeOnly Time, ReminderStatus? Status, string? ByName, DateTimeOffset? At);
+public record DayDto(DateOnly Date, IReadOnlyList<OccurrenceDto> Items, int Done, int Total);
+public record LogReminderRequest(DateOnly? Date, TimeOnly Time, ReminderStatus? Status);
+
+// ---------- Memories ----------
+public record MemoryDto(Guid Id, DateOnly TakenOn, string? Caption, int? PregnancyWeek, string Thumbnail, long SizeBytes, string? ByName, DateTimeOffset CreatedAt);
 
 // ---------- Pregnancy ----------
 public record GestationDto(int TotalDays, int Weeks, int Days, int Trimester, int DaysToGo, int ProgressPercent);

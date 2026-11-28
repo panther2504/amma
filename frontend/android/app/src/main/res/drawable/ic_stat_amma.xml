@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Status-bar icon for Amma reminders (white silhouette, as Android requires). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp" android:viewportWidth="64" android:viewportHeight="64">
+    <path android:fillColor="#FFFFFFFF"
+        android:pathData="M32,54S11,41.6 11,26a11.5,11.5 0,0 1,21 -6.4A11.5,11.5 0,0 1,53 26c0,15.6 -21,28 -21,28z"/>
+</vector>

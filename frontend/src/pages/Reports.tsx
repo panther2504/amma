@@ -4,14 +4,14 @@ import { useAction, useDocuments } from '../api/hooks'
 import type { DocumentCategory, DocumentExplanation, MedicalDocument } from '../api/types'
 import { Empty, Info } from '../ui/bits'
 import { Icon } from '../ui/Icon'
-import { PageFrame, useSheet, useToast } from '../ui/shell'
+import { useSheet, useToast } from '../ui/shell'
 import { bytes, fmt, iso, today } from '../lib/util'
 
 const CATS: [DocumentCategory | 'all', string, string][] = [['all', 'All', ''], ['ultrasound', 'Ultrasound', '🩻'], ['blood', 'Blood', '🩸'], ['urine', 'Urine', '🧪'], ['prescription', 'Prescription', '📝'], ['vaccination', 'Vaccination', '💉'], ['discharge', 'Discharge', '🏥'], ['other', 'Other', '📄']]
 const emojiOf = (c: DocumentCategory) => CATS.find(x => x[0] === c)?.[2] ?? '📄'
 const labelOf = (c: DocumentCategory) => CATS.find(x => x[0] === c)?.[1] ?? 'Other'
 
-export function ReportsPage() {
+export function ReportsBody() {
   const docs = useDocuments()
   const sheet = useSheet()
   const toast = useToast()
@@ -28,7 +28,7 @@ export function ReportsPage() {
   }
 
   return (
-    <PageFrame title="Report vault" right={<button className="icon-btn" onClick={() => sheet.open(<UploadSheet />)} aria-label="Upload"><Icon name="upload" size={20} /></button>}>
+    <>
       <div className="card" style={{ background: 'linear-gradient(135deg,var(--sky),#F3F9FE)', display: 'flex', gap: 14, alignItems: 'center' }}>
         <div className="ico" style={{ background: '#fff', color: 'var(--sky-ink)' }}><Icon name="lock" /></div>
         <div className="grow"><b style={{ fontSize: 15 }}>{docs.data?.length ?? 0} documents · private</b><small className="muted" style={{ display: 'block', marginTop: 2 }}>Only you decide who can view them</small></div>
@@ -49,7 +49,7 @@ export function ReportsPage() {
       </div>
       <button className="btn ghost block" style={{ marginTop: 6 }} onClick={() => sheet.open(<UploadSheet />)}><Icon name="upload" size={18} /> Upload a report</button>
       <p className="small muted" style={{ textAlign: 'center', marginTop: 10 }}>Timeline sorted by newest first</p>
-    </PageFrame>
+    </>
   )
 }
 

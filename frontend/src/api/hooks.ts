@@ -23,6 +23,11 @@ export const useNotifications = () => useQuery({ queryKey: ['notifs'], queryFn: 
 export const useNotificationPrefs = () => useQuery({ queryKey: ['prefs'], queryFn: () => get<T.NotificationPrefs>('/notifications/preferences') })
 export const useConsents = () => useQuery({ queryKey: ['consents'], queryFn: () => get<T.Consent[]>('/me/consents') })
 export const useContacts = () => useQuery({ queryKey: ['contacts'], queryFn: () => get<T.EmergencyContact[]>('/me/emergency-contacts') })
+export const useReminders = () => useQuery({ queryKey: ['reminders'], queryFn: () => get<T.Reminder[]>('/reminders') })
+/** Today's reminders with who did each one. Refreshes every 30 s so both phones stay in step. */
+export const useDay = () => useQuery({ queryKey: ['day'], queryFn: () => get<T.Day>('/reminders/day'), refetchInterval: 30_000, refetchIntervalInBackground: false })
+export const usePerson = () => useQuery({ queryKey: ['person'], queryFn: () => get<T.Person>('/me/person'), staleTime: 10 * 60_000 })
+export const useMemories = () => useQuery({ queryKey: ['memories'], queryFn: () => get<T.Memory[]>('/memories') })
 export const useChatHistory = () => useQuery({ queryKey: ['chat'], queryFn: () => get<T.AssistantMessage[]>('/assistant/messages'), staleTime: Infinity })
 
 /**

@@ -439,3 +439,93 @@ public class AppReleaseTests
         Assert.Empty(scope.ServiceProvider.GetRequiredService<Amma.Infrastructure.Persistence.AmmaDbContext>().AppSecrets);
     }
 }
+
+public class SharedRemindersTests
+{
+    private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web) { Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) } };
+
+    private static WebApplicationFactory<Program> Factory() => new AmmaFactory().WithWebHostBuilder(b =>
+    {
+        b.UseSetting("SignIn:Mode", "pin");
+        b.UseSetting("SignIn:SharedAccount", "true");
+        b.UseSetting("SignIn:SetupCode", "our-family-secret");
+        b.UseSetting("Otp:AllowedDestinations:0", "9800000031");
+        b.UseSetting("Otp:AllowedDestinations:1", "9800000032");
+    });
+
+    private static async Task<HttpClient> Person(WebApplicationFactory<Program> f, string phone, string pin, string name)
+    {
+        var c = f.CreateClient();
+        var a = await (await c.PostAsJsonAsync("/api/v1/auth/pin/setup", new { destination = phone, setupCode = "our-family-secret", pin, name })).Content.ReadFromJsonAsync<AuthResponse>(Json);
+        c.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", a!.AccessToken);
+        return c;
+    }
+
+    [Fact]
+    public async Task Both_people_see_who_completed_a_reminder()
+    {
+        await using var f = Factory();
+        var wife = await Person(f, "9800000031", "2468", "Priya");
+        var husband = await Person(f, "9800000032", "1357", "Ravi");
+
+        var reminders = (await wife.GetFromJsonAsync<List<ReminderDto>>("/api/v1/reminders", Json))!;
+        Assert.Contains(reminders, r => r.Kind == Amma.Domain.Care.ReminderKind.Water && r.Times.Count >= 6);
+        var tablet = await (await husband.PostAsJsonAsync("/api/v1/reminders", new { kind = "tablet", title = "Iron", note = "1 tablet after lunch", times = new[] { "14:00" } }, Json)).Content.ReadFromJsonAsync<ReminderDto>(Json);
+
+        var water = reminders.First(r => r.Kind == Amma.Domain.Care.ReminderKind.Water);
+        (await husband.PostAsJsonAsync($"/api/v1/reminders/{water.Id}/log", new { time = water.Times[0].ToString("HH:mm"), status = "done" }, Json)).EnsureSuccessStatusCode();
+        (await wife.PostAsJsonAsync($"/api/v1/reminders/{tablet!.Id}/log", new { time = "14:00", status = "done" }, Json)).EnsureSuccessStatusCode();
+
+        // Both phones see the same day, with names.
+        foreach (var c in new[] { wife, husband })
+        {
+            var day = (await c.GetFromJsonAsync<DayDto>("/api/v1/reminders/day", Json))!;
+            Assert.Equal(2, day.Done);
+            Assert.Equal("Ravi", day.Items.First(i => i.ReminderId == water.Id && i.Time == water.Times[0]).ByName);
+            Assert.Equal("Priya", day.Items.First(i => i.ReminderId == tablet.Id).ByName);
+        }
+
+        Assert.Equal("Ravi", (await husband.GetFromJsonAsync<PersonDto>("/api/v1/me/person", Json))!.Name);
+    }
+
+    [Fact]
+    public async Task Starter_reminders_are_created_once_even_with_parallel_requests()
+    {
+        await using var f = Factory();
+        var c = await Person(f, "9800000031", "2468", "Priya");
+        await Task.WhenAll(Enumerable.Range(0, 8).Select(i => i % 2 == 0 ? c.GetAsync("/api/v1/reminders") : c.GetAsync("/api/v1/reminders/day")));
+        var list = (await c.GetFromJsonAsync<List<ReminderDto>>("/api/v1/reminders", Json))!;
+        Assert.Equal(list.Count, list.Select(r => r.Title).Distinct().Count());
+    }
+
+    [Fact]
+    public async Task Memories_keep_a_thumbnail_and_the_full_photo()
+    {
+        await using var f = Factory();
+        var c = await Person(f, "9800000031", "2468", "Priya");
+        var form = new MultipartFormDataContent();
+        var img = new ByteArrayContent([0xFF, 0xD8, 0xFF, 0xE0, 1, 2, 3]);
+        img.Headers.ContentType = new MediaTypeHeaderValue("image/jpeg");
+        form.Add(img, "photo", "p.jpg");
+        form.Add(new StringContent("data:image/jpeg;base64,AAAA"), "thumbnail");
+        form.Add(new StringContent("First scan day"), "caption");
+        var m = await (await c.PostAsync("/api/v1/memories", form)).Content.ReadFromJsonAsync<MemoryDto>(Json);
+        Assert.Equal("Priya", m!.ByName);
+        Assert.Single((await c.GetFromJsonAsync<List<MemoryDto>>("/api/v1/memories", Json))!);
+        Assert.Equal(7, (await c.GetByteArrayAsync($"/api/v1/memories/{m.Id}/photo")).Length);
+        Assert.Equal(HttpStatusCode.NoContent, (await c.DeleteAsync($"/api/v1/memories/{m.Id}")).StatusCode);
+    }
+
+    [Fact]
+    public async Task Weight_is_one_reading_per_day()
+    {
+        await using var f = Factory();
+        var c = await Person(f, "9800000031", "2468", "Priya");
+        await c.PostAsJsonAsync("/api/v1/health/weights", new { kg = 60.2 });
+        await c.PostAsJsonAsync("/api/v1/health/weights", new { kg = 60.5 });
+        await c.PostAsJsonAsync("/api/v1/health/weights", new { kg = 60.1, date = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(5.5)).AddDays(-1) });
+        var h = (await c.GetFromJsonAsync<HealthSummaryDto>("/api/v1/health/summary", Json))!;
+        Assert.Equal(2, h.Weights.Count);
+        Assert.Equal(60.5m, h.LatestWeight!.Kg);
+    }
+}

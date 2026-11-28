@@ -18,6 +18,7 @@ export function Login({ onSignedIn }: { onSignedIn: (a: AuthResponse) => void })
   const [pin, setPin] = useState('')
   const [pin2, setPin2] = useState('')
   const [setupCode, setSetupCode] = useState('')
+  const [name, setName] = useState('')
   const [devCode, setDevCode] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -49,8 +50,9 @@ export function Login({ onSignedIn }: { onSignedIn: (a: AuthResponse) => void })
     } else {
       if (!/^\d{4,8}$/.test(pin)) { toast('Choose a PIN of 4 to 8 digits'); return }
       if (pin !== pin2) { toast('The two PINs do not match'); return }
+      if (!name.trim()) { toast('Enter your name'); return }
       if (!setupCode.trim()) { toast('Enter the setup code'); return }
-      done(await api<AuthResponse>('/auth/pin/setup', { method: 'POST', body: { destination: dest, setupCode, pin }, auth: false }))
+      done(await api<AuthResponse>('/auth/pin/setup', { method: 'POST', body: { destination: dest, setupCode, pin, name: name.trim() }, auth: false }))
     }
   })
 
@@ -85,8 +87,10 @@ export function Login({ onSignedIn }: { onSignedIn: (a: AuthResponse) => void })
             <input className="field" id="pin" type="password" inputMode="numeric" autoComplete="current-password" placeholder="••••" style={pinInput} value={pin} onChange={e => setPin(digits(e.target.value))} autoFocus />
           </>}
           {step === 'setup' && <>
+            <label className="label" htmlFor="pname">Your name</label>
+            <input className="field" id="pname" autoComplete="given-name" placeholder="e.g. Ravi" maxLength={40} value={name} onChange={e => setName(e.target.value)} autoFocus />
             <label className="label" htmlFor="newPin">New PIN (4–8 digits)</label>
-            <input className="field" id="newPin" type="password" inputMode="numeric" autoComplete="new-password" placeholder="••••" style={pinInput} value={pin} onChange={e => setPin(digits(e.target.value))} autoFocus />
+            <input className="field" id="newPin" type="password" inputMode="numeric" autoComplete="new-password" placeholder="••••" style={pinInput} value={pin} onChange={e => setPin(digits(e.target.value))} />
             <label className="label" htmlFor="newPin2">Repeat PIN</label>
             <input className="field" id="newPin2" type="password" inputMode="numeric" autoComplete="new-password" placeholder="••••" style={pinInput} value={pin2} onChange={e => setPin2(digits(e.target.value))} />
             <label className="label" htmlFor="setupCode">Setup code</label>

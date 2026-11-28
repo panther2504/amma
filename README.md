@@ -79,6 +79,18 @@ Before going live, configure these settings (environment variables use `__`, e.g
 
 **Important:** starter content is seeded with status `InReview`. With `IncludeUnreviewed=false`, the food guide, weekly guide and articles stay empty until a medical reviewer approves them and an admin publishes them. Emergency warning signs are also bundled into the app, so they are always available.
 
+## What the family app does
+
+Five tabs, for two people tracking one pregnancy (each signs in on their own phone with their own PIN):
+
+- **Today**: water, meals, snacks, juice and tablet reminders. Each one rings **on both phones** with a chime. Either person taps **Done** and both see "Done by …". If nobody does, both phones ring again 15 minutes later.
+- **Weight**: one reading a day, with a chart and history.
+- **Checkups**: hospital appointments (reminded the day before and 2 hours before) and the report vault.
+- **Memories**: photos for the pregnancy and after. They are resized on the phone and shared with both.
+- **Settings**: your name, reminder times, a sound test, PIN, pregnancy dates and app updates.
+
+Reminders are scheduled on each phone a week ahead and refreshed whenever the app opens, so they ring even offline. Phones learn that the other person tapped Done the next time Amma is opened (or within 30 seconds while it is open).
+
 ## Family setup: Android app + free server + Neon
 
 How it fits together:

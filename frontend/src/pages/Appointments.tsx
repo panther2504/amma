@@ -4,16 +4,15 @@ import { patchCache, useAction, useAppointments, useContent } from '../api/hooks
 import type { Appointment, SaveAppointment } from '../api/types'
 import { Empty, SecHead, Segment } from '../ui/bits'
 import { Icon } from '../ui/Icon'
-import { PageFrame, useApp, usePages, useSheet, useToast } from '../ui/shell'
+import { useApp, useSheet, useToast } from '../ui/shell'
 import { addDays, fmt, iso, parseDate, t12, today } from '../lib/util'
 
-export function AppointmentsPage() {
+export function AppointmentsBody() {
   const { lang } = useApp()
   const q = useAppointments()
   const content = useContent(lang)
   const sheet = useSheet()
   const toast = useToast()
-  const { open } = usePages()
   const [tab, setTab] = useState(0)
   const done = useAction((id: string) => queuePost(`/appointments/${id}/status?status=completed`), [['appts'], ['dashboard']], () => toast('✅ Appointment completed'),
     (qc, id) => patchCache<Appointment[]>(qc, ['appts'], v => v.map(a => (a.id === id ? { ...a, status: 'completed' } : a))))
@@ -24,8 +23,9 @@ export function AppointmentsPage() {
   const checkups = (content.data?.snippets ?? []).filter(s => s.kind === 'CheckupType')
 
   return (
-    <PageFrame title="Checkups" right={<button className="icon-btn" onClick={() => sheet.open(<ApptForm />)} aria-label="Add appointment"><Icon name="plus" size={20} /></button>}>
-      <div style={{ marginTop: -18 }}><Segment items={[`Upcoming (${up.length})`, `Completed (${past.length})`]} value={tab} onChange={setTab} /></div>
+    <>
+      <button className="btn block" style={{ marginTop: 4 }} onClick={() => sheet.open(<ApptForm />)}><Icon name="plus" size={18} /> Add appointment</button>
+      <Segment items={[`Upcoming (${up.length})`, `Completed (${past.length})`]} value={tab} onChange={setTab} />
       {list.map(a => {
         const d = parseDate(a.date)
         return (
@@ -40,7 +40,7 @@ export function AppointmentsPage() {
             </div>
             {a.purpose && <p className="small" style={{ marginTop: 12, padding: '10px 12px', borderRadius: 12, background: 'var(--bg)', color: 'var(--ink2)' }}>{a.purpose}</p>}
             {a.status === 'completed'
-              ? <button className="btn sm soft" style={{ marginTop: 10 }} onClick={() => open('reports')}><Icon name="file" size={15} /> View reports</button>
+              ? <span className="tag c-sage" style={{ marginTop: 10 }}><Icon name="check" size={12} /> Completed</span>
               : <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
                   <button className="btn sm ghost" onClick={() => done.mutate(a.id)}><Icon name="check" size={15} stroke={2.6} /> Mark done</button>
                   <span className="btn sm soft" style={{ pointerEvents: 'none' }}><Icon name="bell" size={15} /> {a.reminderMinutesBefore >= 1440 ? `${Math.round(a.reminderMinutesBefore / 1440)} day before` : `${Math.round(a.reminderMinutesBefore / 60)} h before`}</span>
@@ -54,7 +54,7 @@ export function AppointmentsPage() {
         {checkups.map(x => <div className="rowi" key={x.key}><div className="ico c-lav"><Icon name="clip" size={19} /></div><div className="grow"><b>{x.title}</b><small>{x.body}</small></div></div>)}
         <p className="small muted" style={{ marginTop: 10, lineHeight: 1.5 }}>Your schedule depends on your health and your doctor's advice.</p>
       </div>
-    </PageFrame>
+    </>
   )
 }
 

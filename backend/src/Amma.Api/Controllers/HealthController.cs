@@ -35,8 +35,8 @@ public class HealthController : ApiControllerBase
         if (date > today) return Problem422("You can't log a future date.");
         var p = await ActivePregnancyAsync(ct);
         var week = p is null ? 0 : PregnancyCalculator.Calculate(p.Lmp, date).Weeks;
-        // One weight per gestational week keeps the chart readable; a new reading replaces that week's value.
-        var existing = await Db.WeightLogs.FirstOrDefaultAsync(x => x.UserId == UserId && x.GestationalWeek == week && week > 0, ct);
+        // One weight per day: a new reading on the same day replaces it.
+        var existing = await Db.WeightLogs.FirstOrDefaultAsync(x => x.UserId == UserId && x.Date == date, ct);
         var w = existing ?? new WeightLog { UserId = UserId };
         w.Date = date; w.GestationalWeek = week; w.Kg = req.Kg;
         if (existing is null) Db.WeightLogs.Add(w);

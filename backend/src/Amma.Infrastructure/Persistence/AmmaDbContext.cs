@@ -31,6 +31,9 @@ public class AmmaDbContext(DbContextOptions<AmmaDbContext> options) : DbContext(
     public DbSet<Medication> Medications => Set<Medication>();
     public DbSet<MedicationLog> MedicationLogs => Set<MedicationLog>();
     public DbSet<Appointment> Appointments => Set<Appointment>();
+    public DbSet<Reminder> Reminders => Set<Reminder>();
+    public DbSet<ReminderLog> ReminderLogs => Set<ReminderLog>();
+    public DbSet<MemoryPhoto> MemoryPhotos => Set<MemoryPhoto>();
 
     // Tracking
     public DbSet<WaterLog> WaterLogs => Set<WaterLog>();
@@ -83,6 +86,8 @@ public class AmmaDbContext(DbContextOptions<AmmaDbContext> options) : DbContext(
         b.Properties<NotificationType>().HaveConversion<string>().HaveMaxLength(32);
         b.Properties<FoodSafety>().HaveConversion<string>().HaveMaxLength(32);
         b.Properties<SnippetKind>().HaveConversion<string>().HaveMaxLength(32);
+        b.Properties<ReminderKind>().HaveConversion<string>().HaveMaxLength(16);
+        b.Properties<ReminderStatus>().HaveConversion<string>().HaveMaxLength(16);
         b.Properties<string>().HaveMaxLength(2000);
         b.Properties<decimal>().HavePrecision(8, 2);
     }
@@ -111,6 +116,11 @@ public class AmmaDbContext(DbContextOptions<AmmaDbContext> options) : DbContext(
         m.Entity<MedicationLog>().HasIndex(x => new { x.MedicationId, x.Date, x.ScheduledTime }).IsUnique();
         m.Entity<MedicationLog>().HasIndex(x => new { x.UserId, x.Date });
         m.Entity<Appointment>().HasIndex(x => new { x.UserId, x.Date });
+        m.Entity<Reminder>().HasIndex(x => new { x.UserId, x.IsActive });
+        m.Entity<ReminderLog>().HasIndex(x => new { x.ReminderId, x.Date, x.Time }).IsUnique();
+        m.Entity<ReminderLog>().HasIndex(x => new { x.UserId, x.Date });
+        m.Entity<MemoryPhoto>().HasIndex(x => new { x.UserId, x.TakenOn });
+        m.Entity<MemoryPhoto>().Property(x => x.ThumbnailDataUrl).HasMaxLength(200_000);
 
         m.Entity<WaterLog>().HasIndex(x => new { x.UserId, x.Date }).IsUnique();
         m.Entity<DailyLog>().HasIndex(x => new { x.UserId, x.Date }).IsUnique();

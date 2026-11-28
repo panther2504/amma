@@ -2,9 +2,8 @@ import { useEffect, useState } from 'react'
 import { api, del, put } from '../api/client'
 import { useAction, useConsents, useNotificationPrefs, usePregnancy } from '../api/hooks'
 import type { ConsentType, Diet, NotificationPrefs, Pregnancy, SavePregnancy, User } from '../api/types'
-import { Choice, Info, SecHead, Skeleton, Switch } from '../ui/bits'
+import { Choice, Info, MenuItem, SecHead, Skeleton, Switch } from '../ui/bits'
 import { Icon } from '../ui/Icon'
-import { MenuItem } from '../tabs/Profile'
 import { checkForUpdate, currentVersion } from '../lib/updates'
 import { UpdateSheet } from '../ui/UpdateSheet'
 import { PageFrame, useApp, useSheet, useToast } from '../ui/shell'
@@ -159,7 +158,7 @@ export function PrivacyPage() {
   )
 }
 
-function PinSection() {
+export function PinSection() {
   const toast = useToast()
   const sheet = useSheet()
   const [mode, setMode] = useState<string | null>(null)
@@ -191,7 +190,7 @@ function PinSection() {
   )
 }
 
-function AppVersionSection() {
+export function AppVersionSection() {
   const toast = useToast()
   const sheet = useSheet()
   const [ver, setVer] = useState<{ name: string; code: number } | null>(null)
