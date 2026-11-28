@@ -89,7 +89,7 @@ Five tabs, for two people tracking one pregnancy (each signs in on their own pho
 - **Memories**: photos for the pregnancy and after. They are resized on the phone and shared with both. Optionally connect **Google Drive** (Settings → Save photos to Google Drive): full-size photos then go to an "Amma Memories" folder in your Drive (15 GB free), with only small previews kept on the server. Amma uses the `drive.file` permission, so it can only see the files it created.
 - **Settings**: your name, reminder times, a sound test, PIN, pregnancy dates and app updates.
 
-Reminders are scheduled on each phone a week ahead and refreshed whenever the app opens, so they ring even offline. Phones learn that the other person tapped Done the next time Amma is opened (or within 30 seconds while it is open).
+Reminders are **real alarms** on each phone (native `AmmaAlarms` plugin, `AlarmManager.setAlarmClock`): they ring at the exact time even when Amma is closed or the phone is locked, play on the **alarm volume** so they sound in silent/vibrate mode, show full screen over the lock screen with Done / Snooze / Stop, and are restored after a restart. Five days are planned ahead and refreshed whenever the app opens. Settings → Alarm check shows anything on the phone (battery saver, exact alarms, full-screen permission, alarm volume) that could stop them. Phones learn that the other person tapped Done the next time Amma is opened (or within 30 seconds while it is open).
 
 ## Family setup: Android app + free server + Neon
 

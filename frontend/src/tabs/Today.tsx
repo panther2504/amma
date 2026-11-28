@@ -5,7 +5,7 @@ import type { Day, Occurrence, ReminderStatus } from '../api/types'
 import { Ring, SecHead, Skeleton } from '../ui/bits'
 import { Icon } from '../ui/Icon'
 import { usePages, useToast } from '../ui/shell'
-import { KIND_ICON, clearOccurrence, notificationStatus, openExactAlarmSettings, requestNotificationPermission } from '../lib/reminders'
+import { KIND_ICON, alarmProblems, alarmStatus, dismissOccurrence, type AlarmStatus } from '../lib/reminders'
 import { daysUntil, fmt, hhmm, ordinal, parseDate, relDays, t12, vibrate } from '../lib/util'
 
 const KIND_COLOR: Record<string, string> = { water: 'c-sky', meal: 'c-peach', snack: 'c-sage', juice: 'c-amber', tablet: 'c-lav', other: 'c-blush' }
@@ -17,7 +17,7 @@ export function useMarkReminder() {
     (a: { o: Occurrence; status: ReminderStatus | null }) => queuePost(`/reminders/${a.o.reminderId}/log`, { time: hhmm(a.o.time), status: a.status }),
     [['day']],
     (r, a) => {
-      if (a.status) clearOccurrence(a.o.reminderId, hhmm(a.o.time))
+      if (a.status) dismissOccurrence(a.o.reminderId, hhmm(a.o.time))
       if (a.status === 'done') toast(isQueued(r) ? '✅ Done · will sync when online' : '✅ Done — the other phone will see it')
     },
     (qc, a) => patchCache<Day>(qc, ['day'], d => {
@@ -50,18 +50,24 @@ function Row({ o, now }: { o: Occurrence; now: number }) {
 }
 
 function SetupBanner() {
-  const [st, setSt] = useState<{ permission: boolean; exact: boolean } | null>(null)
-  useEffect(() => { notificationStatus().then(setSt).catch(() => {}) }, [])
-  if (!st || (st.permission && st.exact)) return null
+  const [st, setSt] = useState<AlarmStatus | null>(null)
+  useEffect(() => {
+    const load = () => { alarmStatus().then(setSt).catch(() => {}) }
+    load()
+    const onVis = () => { if (document.visibilityState === 'visible') load() }
+    document.addEventListener('visibilitychange', onVis)
+    return () => document.removeEventListener('visibilitychange', onVis)
+  }, [])
+  const problems = alarmProblems(st)
+  if (!problems.length) return null
+  const p = problems[0]
   return (
     <div className="info warn" style={{ marginBottom: 14 }}>
       <Icon name="bell" size={18} />
       <span>
-        {!st.permission ? <>Reminders can't ring until you allow notifications. </> : <>Allow <b>Alarms &amp; reminders</b> so reminders ring exactly on time. </>}
-        <button style={{ color: 'inherit', fontWeight: 800, textDecoration: 'underline' }}
-          onClick={async () => { if (!st.permission) await requestNotificationPermission(); else await openExactAlarmSettings(); setSt(await notificationStatus()) }}>
-          {st.permission ? 'Open setting' : 'Allow'}
-        </button>
+        {p.text}{' '}
+        <button style={{ color: 'inherit', fontWeight: 800, textDecoration: 'underline' }} onClick={async () => { await p.act(); setTimeout(() => alarmStatus().then(setSt), 800) }}>{p.fix}</button>
+        {problems.length > 1 && <> · {problems.length - 1} more in Settings</>}
       </span>
     </div>
   )

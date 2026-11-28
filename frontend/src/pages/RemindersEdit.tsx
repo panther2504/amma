@@ -5,7 +5,7 @@ import type { Reminder, ReminderKind, SaveReminder } from '../api/types'
 import { Choice, Info, SecHead, Skeleton } from '../ui/bits'
 import { Icon } from '../ui/Icon'
 import { PageFrame, useSheet, useToast } from '../ui/shell'
-import { KIND_ICON, KIND_LABEL, testReminder } from '../lib/reminders'
+import { KIND_ICON, KIND_LABEL, testAlarm } from '../lib/reminders'
 import { hhmm, t12 } from '../lib/util'
 
 const ORDER: ReminderKind[] = ['tablet', 'water', 'meal', 'snack', 'juice', 'other']
@@ -40,8 +40,8 @@ export function RemindersPage() {
         )
       })}
       <button className="btn block" style={{ marginTop: 16 }} onClick={() => sheet.open(<ReminderForm />)}><Icon name="plus" size={18} /> Add a reminder</button>
-      <button className="btn ghost block" style={{ marginTop: 10 }} onClick={async () => toast((await testReminder()) ? '🔔 A test reminder will ring in 5 seconds' : 'Test reminders work in the Android app')}>
-        <Icon name="bell" size={18} /> Test the reminder sound
+      <button className="btn ghost block" style={{ marginTop: 10 }} onClick={async () => toast((await testAlarm(10)) ? '🔔 Test alarm in 10 seconds — lock your phone to check' : 'Test alarms work in the Android app')}>
+        <Icon name="bell" size={18} /> Test alarm (rings in 10 seconds)
       </button>
     </PageFrame>
   )

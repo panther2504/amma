@@ -1,148 +1,171 @@
-import { LocalNotifications, type LocalNotificationSchema } from '@capacitor/local-notifications'
+import { registerPlugin } from '@capacitor/core'
+import { LocalNotifications } from '@capacitor/local-notifications'
 import type { Appointment, Day, Reminder, ReminderKind } from '../api/types'
 import { isNative } from './localdb'
 import { addDays, iso, t12, today } from './util'
 
 /*
- * Reminders are scheduled ON EACH PHONE (both of you share one account, so both phones schedule the same list).
- * They ring with sound even offline. Each one has "Done" and "Snooze" buttons, and if nobody marks it done a
- * follow-up rings 15 minutes later on both phones. Seven days are scheduled ahead and refreshed whenever the app opens.
+ * Reminders are real ALARMS on each phone (native AmmaAlarms plugin):
+ * - exact time, even when Amma is closed, the phone is locked or in battery saver,
+ * - sound on the ALARM volume (rings in silent / vibrate mode), vibration, full-screen over the lock screen,
+ * - Done / Snooze 10 min / Stop buttons; "Done" works without opening the app and is synced later,
+ * - if nobody marks it done, a follow-up alarm 15 minutes later on both phones,
+ * - restored after the phone restarts. Five days are planned ahead and refreshed whenever Amma opens.
  */
-export const CHANNEL = 'amma-reminders-v1'
-const ACTIONS = 'AMMA_REMINDER'
-const BASE = 100_000
-const APPT_BASE = 700_000
-const DAYS_AHEAD = 7
 export const FOLLOW_UP_MIN = 15
+const DAYS_AHEAD = 5
 
 export const KIND_ICON: Record<ReminderKind, string> = { water: '💧', meal: '🍽️', snack: '🍎', juice: '🥤', tablet: '💊', other: '⏰' }
 export const KIND_LABEL: Record<ReminderKind, string> = { water: 'Water', meal: 'Meal', snack: 'Snack', juice: 'Juice', tablet: 'Tablet', other: 'Other' }
 
-const hash = (s: string) => { let h = 0; for (const c of s) h = (h * 31 + c.charCodeAt(0)) | 0; return Math.abs(h) % 25_000 }
-/** Stable notification id for a reminder time on a given day (0 = today) and whether it is the follow-up. */
-export const notifId = (reminderId: string, time: string, dayIndex: number, followUp: boolean) =>
-  BASE + hash(reminderId + time.slice(0, 5)) * 20 + dayIndex * 2 + (followUp ? 1 : 0)
-
-let prepared = false
-export async function prepareNotifications() {
-  if (!isNative() || prepared) return
-  prepared = true
-  await LocalNotifications.createChannel({
-    id: CHANNEL, name: 'Reminders', description: 'Water, food, juice and tablet reminders',
-    importance: 5, visibility: 1, sound: 'amma_chime.wav', vibration: true, lights: true, lightColor: '#C2497A',
-  })
-  await LocalNotifications.registerActionTypes({
-    types: [{ id: ACTIONS, actions: [{ id: 'done', title: '✓ Done' }, { id: 'snooze', title: 'Snooze 10 min' }] }],
-  })
+interface AlarmItem { reminderId: string; time: string; date: string; followUp?: boolean }
+interface Alarm { id: number; at: number; title: string; body: string; items: AlarmItem[]; quiet?: boolean }
+export interface DoneAction { reminderId: string; time: string; date: string; status: 'done'; at: number }
+export interface AlarmStatus {
+  notifications: boolean; exact: boolean; fullScreen: boolean; batteryUnrestricted: boolean
+  alarmVolume: number; alarmVolumeMax: number; scheduled: number; manufacturer: string
 }
+interface AmmaAlarmsPlugin {
+  schedule(o: { alarms: Alarm[] }): Promise<{ scheduled: number }>
+  takeActions(): Promise<{ actions: DoneAction[] }>
+  dismiss(o: { ids: number[] }): Promise<void>
+  status(): Promise<AlarmStatus>
+  openSettings(o: { which: 'exact' | 'fullscreen' | 'battery' | 'notifications' | 'app' }): Promise<void>
+  setAlarmVolume(o: { percent: number }): Promise<void>
+  test(o: { seconds: number }): Promise<void>
+}
+const AmmaAlarms = registerPlugin<AmmaAlarmsPlugin>('AmmaAlarms')
 
-export async function notificationStatus() {
-  if (!isNative()) return { permission: true, exact: true }
-  const p = await LocalNotifications.checkPermissions()
-  let exact = true
-  try { exact = (await LocalNotifications.checkExactNotificationSetting()).exact_alarm === 'granted' } catch { /* Android < 12 */ }
-  return { permission: p.display === 'granted', exact }
+/** One alarm per minute: reminders due at the same time ring together. */
+const minuteId = (at: number) => Math.floor(at / 60_000) % 2_000_000_000
+const atTime = (date: Date, time: string) => { const [h, m] = time.split(':').map(Number); const d = new Date(date); d.setHours(h, m, 0, 0); return d.getTime() }
+
+function label(r: { kind: ReminderKind; title: string }) {
+  switch (r.kind) {
+    case 'water': return '💧 Drink water'
+    case 'meal': return `🍽️ ${r.title}`
+    case 'tablet': return `💊 ${r.title}`
+    default: return `${KIND_ICON[r.kind]} ${r.title}`
+  }
 }
 
 export async function requestNotificationPermission() {
   if (!isNative()) return true
-  return (await LocalNotifications.requestPermissions()).display === 'granted'
+  try { return (await LocalNotifications.requestPermissions()).display === 'granted' } catch { return false }
 }
 
-export const openExactAlarmSettings = () => LocalNotifications.changeExactNotificationSetting()
-
-function titleFor(r: { kind: ReminderKind; title: string }) {
-  switch (r.kind) {
-    case 'water': return '💧 Time to drink water'
-    case 'meal': return `🍽️ ${r.title} time`
-    case 'snack': return `🍎 ${r.title}`
-    case 'juice': return `🥤 ${r.title}`
-    case 'tablet': return `💊 Tablet: ${r.title}`
-    default: return `⏰ ${r.title}`
-  }
+/** Earlier versions scheduled plain notifications; remove them once so nothing rings twice. */
+async function removeOldNotifications() {
+  try {
+    if (localStorage.getItem('amma.alarms.v2')) return
+    const p = await LocalNotifications.getPending()
+    if (p.notifications.length) await LocalNotifications.cancel({ notifications: p.notifications.map(n => ({ id: n.id })) })
+    localStorage.setItem('amma.alarms.v2', '1')
+  } catch { /* ignore */ }
 }
 
-const at = (date: Date, time: string) => { const [h, m] = time.split(':').map(Number); const d = new Date(date); d.setHours(h, m, 0, 0); return d }
-
-/** Rebuilds all scheduled reminders on this phone. `todayDay` tells which of today's are already done. */
+/** Rebuilds all alarms on this phone. `todayDay` tells which of today's reminders are already done. */
 export async function scheduleAll(reminders: Reminder[], todayDay: Day | undefined, appts: Appointment[]) {
   if (!isNative()) return
-  if (!(await requestNotificationPermission())) return
-  await prepareNotifications()
-
-  const pending = await LocalNotifications.getPending()
-  const ours = pending.notifications.filter(n => n.id >= BASE)
-  if (ours.length) await LocalNotifications.cancel({ notifications: ours.map(n => ({ id: n.id })) })
+  await requestNotificationPermission()
+  await removeOldNotifications()
 
   const now = Date.now()
   const start = today()
-  const doneToday = new Set((todayDay?.items ?? []).filter(i => i.status).map(i => `${i.reminderId}|${i.time.slice(0, 5)}`))
-  const list: LocalNotificationSchema[] = []
+  const done = new Set((todayDay?.items ?? []).filter(i => i.status).map(i => `${i.reminderId}|${i.time.slice(0, 5)}`))
+  type Group = { at: number; mains: [Reminder, AlarmItem][]; follows: [Reminder, AlarmItem][]; appts: Appointment[] }
+  const groups = new Map<number, Group>()
+  const group = (at: number) => {
+    const id = minuteId(at)
+    let g = groups.get(id)
+    if (!g) groups.set(id, (g = { at, mains: [], follows: [], appts: [] }))
+    return g
+  }
 
   for (let d = 0; d < DAYS_AHEAD; d++) {
     const date = addDays(start, d)
     for (const r of reminders.filter(x => x.isActive)) {
       for (const time of r.times.map(t => t.slice(0, 5))) {
-        if (d === 0 && doneToday.has(`${r.id}|${time}`)) continue
-        const when = at(date, time)
-        const extra = { type: 'reminder', reminderId: r.id, time, date: iso(date), day: d }
-        const body = `${r.note ? r.note + ' · ' : ''}${t12(time)} — tap Done when finished. You both get this reminder.`
-        if (when.getTime() > now) list.push({
-          id: notifId(r.id, time, d, false), title: titleFor(r), body, channelId: CHANNEL, actionTypeId: ACTIONS,
-          schedule: { at: when, allowWhileIdle: true }, extra, autoCancel: true, smallIcon: 'ic_stat_amma',
-        })
-        const follow = new Date(when.getTime() + FOLLOW_UP_MIN * 60_000)
-        if (follow.getTime() > now) list.push({
-          id: notifId(r.id, time, d, true), title: `⏰ Still pending: ${r.kind === 'water' ? 'water' : r.title} (${t12(time)})`,
-          body: 'Nobody has marked this done yet. If it is done, tap Done — otherwise please remind her.',
-          channelId: CHANNEL, actionTypeId: ACTIONS, schedule: { at: follow, allowWhileIdle: true }, extra: { ...extra, followUp: true }, autoCancel: true, smallIcon: 'ic_stat_amma',
-        })
+        if (d === 0 && done.has(`${r.id}|${time}`)) continue
+        const at = atTime(date, time)
+        const item: AlarmItem = { reminderId: r.id, time, date: iso(date) }
+        if (at > now) group(at).mains.push([r, item])
+        const follow = at + FOLLOW_UP_MIN * 60_000
+        if (follow > now) group(follow).follows.push([r, { ...item, followUp: true }])
       }
     }
   }
-
-  // Appointments: the day before (as chosen) and 2 hours before.
   for (const a of appts.filter(x => x.status === 'scheduled')) {
     const t = new Date(`${a.date}T${a.time.slice(0, 5)}:00`).getTime()
-    for (const [i, mins] of [a.reminderMinutesBefore, 120].entries()) {
-      const when = t - mins * 60_000
-      if (when > now && when < now + 30 * 86_400_000) list.push({
-        id: APPT_BASE + hash(a.id) * 2 + i, title: `🏥 ${a.title} · ${i === 1 ? 'in 2 hours' : new Date(t).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}`,
-        body: `${t12(a.time)}${a.doctorName ? ` · ${a.doctorName}` : ''}${a.location ? ` · ${a.location}` : ''}`,
-        channelId: CHANNEL, schedule: { at: new Date(when), allowWhileIdle: true }, extra: { type: 'appointment' }, smallIcon: 'ic_stat_amma',
-      })
+    for (const mins of [a.reminderMinutesBefore, 120]) {
+      const at = t - mins * 60_000
+      if (at > now && at < now + 30 * 86_400_000) group(at).appts.push(a)
     }
   }
 
-  // If the app isn't opened for a week, remind to open it so reminders keep coming.
-  list.push({
-    id: BASE - 1, title: 'Open Amma to keep reminders on time', body: 'Reminders are planned a week ahead. Opening the app plans the next week.',
-    channelId: CHANNEL, schedule: { at: at(addDays(start, DAYS_AHEAD - 1), '10:00'), allowWhileIdle: true }, smallIcon: 'ic_stat_amma',
-  })
+  const alarms: Alarm[] = []
+  for (const [id, g] of groups) {
+    let title: string, body: string
+    if (g.mains.length) {
+      title = g.mains.map(([r]) => label(r)).filter((v, i, a) => a.indexOf(v) === i).join(' · ')
+      const notes = g.mains.map(([r]) => r.note).filter(Boolean).join(' · ')
+      body = `${notes ? notes + '\n' : ''}${t12(g.mains[0][1].time)} — tap Done when finished. Both phones get this reminder.`
+      if (g.follows.length) body += `\nAlso still pending: ${g.follows.map(([r]) => (r.kind === 'water' ? 'water' : r.title)).join(', ')}`
+    } else if (g.follows.length) {
+      title = `⏰ Still pending: ${g.follows.map(([r]) => (r.kind === 'water' ? 'water' : r.title)).join(', ')}`
+      body = `Due at ${t12(g.follows[0][1].time)}. Nobody has marked it done yet — if it's done, tap Done; otherwise please remind her.`
+    } else {
+      const a = g.appts[0]
+      title = `🏥 ${a.title} · ${a.date === iso(new Date(g.at)) ? 'today' : new Date(`${a.date}T00:00:00`).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })} ${t12(a.time)}`
+      body = [a.doctorName, a.location].filter(Boolean).join(' · ') || 'Hospital checkup'
+    }
+    alarms.push({ id, at: g.at, title, body, items: [...g.mains, ...g.follows].map(([, it]) => it) })
+  }
+  const keepAlive = atTime(addDays(start, DAYS_AHEAD - 1), '10:00')
+  if (keepAlive > now) alarms.push({ id: minuteId(keepAlive) + 1, at: keepAlive, quiet: true, items: [],
+    title: 'Open Amma to keep reminders on time', body: 'Reminders are planned a few days ahead. Opening the app plans the next days.' })
 
-  for (let i = 0; i < list.length; i += 100) await LocalNotifications.schedule({ notifications: list.slice(i, i + 100) })
+  await AmmaAlarms.schedule({ alarms })
 }
 
-/** After an occurrence is done (on this phone or the other), stop its notifications here. */
-export async function clearOccurrence(reminderId: string, time: string) {
+/** After an occurrence is done (here or on the other phone), stop and remove its alarms on this phone. */
+export async function dismissOccurrence(reminderId: string, time: string) {
   if (!isNative()) return
-  const ids = [notifId(reminderId, time, 0, false), notifId(reminderId, time, 0, true)]
-  await LocalNotifications.cancel({ notifications: ids.map(id => ({ id })) }).catch(() => {})
-  await LocalNotifications.removeDeliveredNotificationsById({ ids }).catch(() => {})
+  void reminderId
+  const at = atTime(today(), time.slice(0, 5))
+  await AmmaAlarms.dismiss({ ids: [minuteId(at), minuteId(at + FOLLOW_UP_MIN * 60_000)] }).catch(() => {})
 }
 
-export async function snooze(n: LocalNotificationSchema) {
-  await LocalNotifications.schedule({ notifications: [{ ...n, id: 1_000_000 + (n.id % 900_000), schedule: { at: new Date(Date.now() + 10 * 60_000), allowWhileIdle: true } }] })
+/** "Done" taps made on the alarm screen while Amma was closed. */
+export async function takeDoneActions(): Promise<DoneAction[]> {
+  if (!isNative()) return []
+  try { return (await AmmaAlarms.takeActions()).actions ?? [] } catch { return [] }
 }
 
-/** Plays a sample reminder in 5 seconds so you can check the sound and volume. */
-export async function testReminder() {
+export async function alarmStatus(): Promise<AlarmStatus | null> {
+  if (!isNative()) return null
+  try { return await AmmaAlarms.status() } catch { return null }
+}
+
+export const openAlarmSettings = (which: 'exact' | 'fullscreen' | 'battery' | 'notifications' | 'app') => (isNative() ? AmmaAlarms.openSettings({ which }) : Promise.resolve())
+export const setAlarmVolume = (percent: number) => (isNative() ? AmmaAlarms.setAlarmVolume({ percent }) : Promise.resolve())
+
+/** A real alarm in a few seconds, so you can lock the phone and check it rings. */
+export async function testAlarm(seconds = 10) {
   if (!isNative()) return false
-  if (!(await requestNotificationPermission())) return false
-  await prepareNotifications()
-  await LocalNotifications.schedule({ notifications: [{
-    id: BASE - 2, title: '💧 Test reminder', body: 'This is how Amma reminders sound. Both phones get them.',
-    channelId: CHANNEL, schedule: { at: new Date(Date.now() + 5000), allowWhileIdle: true }, smallIcon: 'ic_stat_amma',
-  }] })
+  await requestNotificationPermission()
+  await AmmaAlarms.test({ seconds })
   return true
+}
+
+/** Problems that stop alarms ringing on time, most important first. */
+export function alarmProblems(s: AlarmStatus | null) {
+  if (!s) return []
+  const p: { key: string; text: string; fix: string; act: () => Promise<void> }[] = []
+  if (!s.notifications) p.push({ key: 'n', text: 'Notifications are off for Amma, so reminders cannot show.', fix: 'Turn on', act: async () => { if (!(await requestNotificationPermission())) await openAlarmSettings('notifications') } })
+  if (!s.exact) p.push({ key: 'e', text: 'Allow "Alarms & reminders" so reminders ring exactly on time.', fix: 'Allow', act: () => openAlarmSettings('exact') })
+  if (!s.fullScreen) p.push({ key: 'f', text: 'Allow full-screen alarms so reminders show over the lock screen.', fix: 'Allow', act: () => openAlarmSettings('fullscreen') })
+  if (!s.batteryUnrestricted) p.push({ key: 'b', text: 'Battery saving can delay reminders. Set Amma to "Unrestricted".', fix: 'Fix', act: () => openAlarmSettings('battery') })
+  if (s.alarmVolumeMax > 0 && s.alarmVolume === 0) p.push({ key: 'v', text: 'Your alarm volume is 0, so reminders would be silent.', fix: 'Set to 70%', act: () => setAlarmVolume(70) })
+  return p
 }

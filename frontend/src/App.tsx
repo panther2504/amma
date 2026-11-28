@@ -2,14 +2,13 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { useQueryClient } from '@tanstack/react-query'
 import { OfflineError, cachedUser, get, hasStoredSession, logout, onOutboxChange, onSignedOut, refreshSession } from './api/client'
 import { flushOutbox, pendingCount } from './lib/sync'
-import { CHANNEL, clearOccurrence, prepareNotifications, scheduleAll, snooze } from './lib/reminders'
+import { dismissOccurrence, scheduleAll, takeDoneActions } from './lib/reminders'
 import { checkForUpdate, dueForCheck } from './lib/updates'
 import { UpdateSheet } from './ui/UpdateSheet'
 import { useAppointments, useDay, useReminders } from './api/hooks'
 import { isNative } from './lib/localdb'
 import { App as NativeApp } from '@capacitor/app'
-import { LocalNotifications } from '@capacitor/local-notifications'
-import type { AuthResponse, Day, User } from './api/types'
+import type { AuthResponse, User } from './api/types'
 import { AppContext, useApp as useAppCtx, useSheet, PageStack, SheetProvider, ToastProvider, stagger, useRipple, type PageRenderer } from './ui/shell'
 import { Icon, type IconName } from './ui/Icon'
 import { Onboarding, Splash } from './screens/Intro'
@@ -186,27 +185,24 @@ function ReminderBridge() {
     scheduleAll(reminders.data, day.data, appts.data ?? []).catch(e => console.warn('schedule', e))
     // Anything newly marked done (here or on the other phone) is cleared from the notification tray.
     const now = new Set((day.data?.items ?? []).filter(i => i.status).map(i => `${i.reminderId}|${i.time.slice(0, 5)}`))
-    now.forEach(k => { if (!prevDone.current.has(k)) { const [id, t] = k.split('|'); clearOccurrence(id, t) } })
+    now.forEach(k => { if (!prevDone.current.has(k)) { const [id, t] = k.split('|'); dismissOccurrence(id, t) } })
     prevDone.current = now
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [remKey, doneKey, apptKey])
 
   useEffect(() => {
     if (!isNative()) return
-    prepareNotifications().catch(() => {})
-    const action = LocalNotifications.addListener('localNotificationActionPerformed', async e => {
-      const x = e.notification.extra as { type?: string; reminderId?: string; time?: string; date?: string } | undefined
-      if (x?.type !== 'reminder' || !x.reminderId || !x.time) return
-      if (e.actionId === 'snooze') { await snooze({ ...e.notification, channelId: CHANNEL }); return }
-      if (e.actionId === 'done') {
-        await clearOccurrence(x.reminderId, x.time)
-        qc.setQueryData<Day>(['day'], d => d && { ...d, items: d.items.map(i => (i.reminderId === x.reminderId && i.time.startsWith(x.time!) ? { ...i, status: 'done', byName: 'You' } : i)) })
-        await queuePost(`/reminders/${x.reminderId}/log`, { date: x.date, time: x.time, status: 'done' }).catch(() => {})
-      }
+    // "Done" tapped on the alarm screen / notification (even while Amma was closed): send it to the server.
+    const drain = async () => {
+      const actions = await takeDoneActions()
+      if (!actions.length) return
+      for (const a of actions) await queuePost(`/reminders/${a.reminderId}/log`, { date: a.date, time: a.time, status: 'done' }).catch(() => {})
       qc.invalidateQueries({ queryKey: ['day'] })
-    })
-    const resume = NativeApp.addListener('resume', () => { qc.invalidateQueries({ queryKey: ['day'] }); qc.invalidateQueries({ queryKey: ['reminders'] }) })
-    return () => { action.then(h => h.remove()); resume.then(h => h.remove()) }
+    }
+    drain()
+    const t = setInterval(drain, 15_000)
+    const resume = NativeApp.addListener('resume', () => { drain(); qc.invalidateQueries({ queryKey: ['day'] }); qc.invalidateQueries({ queryKey: ['reminders'] }) })
+    return () => { clearInterval(t); resume.then(h => h.remove()) }
   }, [qc])
   return null
 }
