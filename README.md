@@ -116,6 +116,7 @@ To update later, run the workflow again and install the new APK over the old one
 | Setting | Purpose |
 |---|---|
 | `SignIn__Mode=pin` | PIN per person instead of SMS codes |
+| `SignIn__SharedAccount=true` | Both numbers use ONE account (both track the same pregnancy), each with their own PIN |
 | `SignIn__SetupCode` | Needed once to create a PIN, so nobody else can claim your number |
 | `Otp__AllowedDestinations__N` | The only numbers allowed to use the app |
 | `Storage__Provider=Database` | Keep uploaded reports in Neon (free hosts have no permanent disk) |

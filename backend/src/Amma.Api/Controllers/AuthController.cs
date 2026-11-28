@@ -83,11 +83,11 @@ public class AuthController(AmmaDbContext db, TokenService tokens, IOtpSender se
         var dest = Destination.Normalize(req.Destination);
         if (dest is null) return ValidationProblem(new ValidationProblemDetails(Msg("Destination", "Enter a valid Indian mobile number.")));
         if (!_otp.IsAllowed(dest)) return Problem(detail: "This is a private app. This number is not on the access list.", statusCode: 403);
-        var user = await FindAsync(dest, ct);
-        return new PinStatusResponse(user?.PinHash is not null);
+        var login = await db.LoginIdentities.AsNoTracking().FirstOrDefaultAsync(l => l.Destination == dest, ct);
+        return new PinStatusResponse(login?.PinHash is not null);
     }
 
-    /// <summary>Creates the PIN the first time. Requires the private setup code.</summary>
+    /// <summary>Creates this person's PIN the first time. Requires the private setup code.</summary>
     [HttpPost("pin/setup")]
     public async Task<ActionResult<AuthResponse>> PinSetup(PinSetupRequest req, CancellationToken ct)
     {
@@ -97,9 +97,30 @@ public class AuthController(AmmaDbContext db, TokenService tokens, IOtpSender se
         if (string.IsNullOrEmpty(_signIn.SetupCode) ||
             !CryptographicOperations.FixedTimeEquals(System.Text.Encoding.UTF8.GetBytes(tokens.Hash(_signIn.SetupCode)), System.Text.Encoding.UTF8.GetBytes(tokens.Hash(req.SetupCode.Trim()))))
             return Problem(detail: "The setup code is not correct.", statusCode: 400);
-        var existing = await FindAsync(dest, ct);
-        if (existing?.PinHash is not null) return Problem(detail: "A PIN already exists for this number. Sign in with it instead.", statusCode: 409);
-        return await SignInAsync(dest, u => { u.PinHash = PinHasher.HashPassword(u, req.Pin); u.FailedPinAttempts = 0; }, ct);
+        var login = await db.LoginIdentities.FirstOrDefaultAsync(l => l.Destination == dest, ct);
+        if (login?.PinHash is not null) return Problem(detail: "A PIN already exists for this number. Sign in with it instead.", statusCode: 409);
+
+        // Which account does this number belong to?
+        var user = await FindAsync(dest, ct);
+        if (user is null && _signIn.SharedAccount)
+        {
+            // Shared family account: join the account the other allowed number already uses.
+            var owner = await db.LoginIdentities.AsNoTracking().OrderBy(l => l.CreatedAt).Select(l => (Guid?)l.UserId).FirstOrDefaultAsync(ct);
+            if (owner is not null) user = await db.Users.FirstOrDefaultAsync(u => u.Id == owner, ct);
+        }
+        var isNew = user is null;
+        if (user is null)
+        {
+            var isEmail = Destination.IsEmail(dest);
+            user = new User { Email = isEmail ? dest : null, Phone = isEmail ? null : dest };
+            db.Users.Add(user);
+        }
+        if (!user.IsActive) return Problem(detail: "This account is disabled.", statusCode: 403);
+        if (login is null) db.LoginIdentities.Add(login = new LoginIdentity { UserId = user.Id, Destination = dest });
+        login.UserId = user.Id;
+        login.PinHash = PinHasher.HashPassword(user, req.Pin);
+        login.FailedPinAttempts = 0;
+        return await PinSignedInAsync(user, login, isNew, ct);
     }
 
     [HttpPost("pin/login")]
@@ -108,21 +129,33 @@ public class AuthController(AmmaDbContext db, TokenService tokens, IOtpSender se
         if (!_signIn.IsPin) return NotFound();
         var dest = Destination.Normalize(req.Destination);
         if (dest is null || !_otp.IsAllowed(dest)) return Problem(detail: "This is a private app.", statusCode: 403);
-        var user = await db.Users.FirstOrDefaultAsync(u => u.Phone == dest || u.Email == dest, ct);
-        if (user?.PinHash is null) return Problem(detail: "No PIN has been set for this number yet.", statusCode: 400);
+        var login = await db.LoginIdentities.FirstOrDefaultAsync(l => l.Destination == dest, ct);
+        if (login?.PinHash is null) return Problem(detail: "No PIN has been set for this number yet.", statusCode: 400);
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Id == login.UserId, ct);
+        if (user is null || !user.IsActive) return Problem(detail: "This account is disabled.", statusCode: 403);
         var now = clock.GetUtcNow();
-        if (user.PinLockedUntil > now)
-            return Problem(detail: $"Too many wrong attempts. Try again after {Math.Ceiling((user.PinLockedUntil.Value - now).TotalMinutes)} minutes.", statusCode: 429);
+        if (login.PinLockedUntil > now)
+            return Problem(detail: $"Too many wrong attempts. Try again after {Math.Ceiling((login.PinLockedUntil.Value - now).TotalMinutes)} minutes.", statusCode: 429);
 
-        if (PinHasher.VerifyHashedPassword(user, user.PinHash, req.Pin.Trim()) == PasswordVerificationResult.Failed)
+        if (PinHasher.VerifyHashedPassword(user, login.PinHash, req.Pin.Trim()) == PasswordVerificationResult.Failed)
         {
-            user.FailedPinAttempts++;
-            if (user.FailedPinAttempts >= _signIn.MaxPinAttempts) { user.PinLockedUntil = now.AddMinutes(_signIn.LockoutMinutes); user.FailedPinAttempts = 0; }
-            audit.Record(user.Id, "auth.pin.failed");
+            login.FailedPinAttempts++;
+            if (login.FailedPinAttempts >= _signIn.MaxPinAttempts) { login.PinLockedUntil = now.AddMinutes(_signIn.LockoutMinutes); login.FailedPinAttempts = 0; }
+            audit.Record(user.Id, "auth.pin.failed", "LoginIdentity", login.Id);
             await db.SaveChangesAsync(ct);
             return Problem(detail: "That PIN is not correct.", statusCode: 400);
         }
-        return await SignInAsync(dest, u => { u.FailedPinAttempts = 0; u.PinLockedUntil = null; }, ct);
+        login.FailedPinAttempts = 0; login.PinLockedUntil = null;
+        return await PinSignedInAsync(user, login, false, ct);
+    }
+
+    private async Task<ActionResult<AuthResponse>> PinSignedInAsync(User user, LoginIdentity login, bool isNew, CancellationToken ct)
+    {
+        var now = clock.GetUtcNow();
+        user.LastLoginAt = now; login.LastLoginAt = now;
+        if (_otp.AdminDestinations.Contains(login.Destination, StringComparer.OrdinalIgnoreCase)) user.Role = UserRole.Admin;
+        audit.Record(user.Id, isNew ? "auth.register" : "auth.login", "LoginIdentity", login.Id);
+        return await IssueAsync(user, isNew, ct, null, login.Id);
     }
 
     private Task<User?> FindAsync(string dest, CancellationToken ct)
@@ -176,7 +209,7 @@ public class AuthController(AmmaDbContext db, TokenService tokens, IOtpSender se
         var user = await db.Users.FirstOrDefaultAsync(u => u.Id == rt.UserId && u.IsActive, ct);
         if (user is null) return Unauthorized();
         rt.RevokedAt = clock.GetUtcNow();
-        var res = await IssueAsync(user, false, ct, rt);
+        var res = await IssueAsync(user, false, ct, rt, rt.LoginIdentityId);
         return res;
     }
 
@@ -189,14 +222,14 @@ public class AuthController(AmmaDbContext db, TokenService tokens, IOtpSender se
         return NoContent();
     }
 
-    private async Task<AuthResponse> IssueAsync(User user, bool isNew, CancellationToken ct, RefreshToken? replaces = null)
+    private async Task<AuthResponse> IssueAsync(User user, bool isNew, CancellationToken ct, RefreshToken? replaces = null, Guid? loginId = null)
     {
         var refresh = TokenService.NewRefreshToken();
-        var rt = new RefreshToken { UserId = user.Id, TokenHash = tokens.Hash(refresh), ExpiresAt = clock.GetUtcNow().AddDays(tokens.RefreshTokenDays) };
+        var rt = new RefreshToken { UserId = user.Id, LoginIdentityId = loginId, TokenHash = tokens.Hash(refresh), ExpiresAt = clock.GetUtcNow().AddDays(tokens.RefreshTokenDays) };
         db.RefreshTokens.Add(rt);
         if (replaces is not null) replaces.ReplacedById = rt.Id;
         await db.SaveChangesAsync(ct);
-        var (access, exp) = tokens.CreateAccessToken(user);
+        var (access, exp) = tokens.CreateAccessToken(user, loginId);
         var hasPregnancy = await db.PregnancyProfiles.AnyAsync(p => p.UserId == user.Id && p.Status == PregnancyStatus.Active, ct);
         return new AuthResponse(access, exp, refresh, user.ToDto(hasPregnancy), isNew);
     }

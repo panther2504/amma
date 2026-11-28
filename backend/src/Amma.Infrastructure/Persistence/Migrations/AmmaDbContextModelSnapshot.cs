@@ -1351,6 +1351,49 @@ namespace Amma.Infrastructure.Persistence.Migrations
                     b.ToTable("EmergencyContacts");
                 });
 
+            modelBuilder.Entity("Amma.Domain.Users.LoginIdentity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Destination")
+                        .IsRequired()
+                        .HasMaxLength(254)
+                        .HasColumnType("character varying(254)");
+
+                    b.Property<int>("FailedPinAttempts")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset?>("LastLoginAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("PinHash")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<DateTimeOffset?>("PinLockedUntil")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Destination")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("LoginIdentities");
+                });
+
             modelBuilder.Entity("Amma.Domain.Users.OtpCode", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1406,6 +1449,9 @@ namespace Amma.Infrastructure.Persistence.Migrations
                     b.Property<DateTimeOffset>("ExpiresAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid?>("LoginIdentityId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid?>("ReplacedById")
                         .HasColumnType("uuid");
 
@@ -1446,9 +1492,6 @@ namespace Amma.Infrastructure.Persistence.Migrations
                         .HasMaxLength(254)
                         .HasColumnType("character varying(254)");
 
-                    b.Property<int>("FailedPinAttempts")
-                        .HasColumnType("integer");
-
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
 
@@ -1468,13 +1511,6 @@ namespace Amma.Infrastructure.Persistence.Migrations
                     b.Property<string>("Phone")
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
-
-                    b.Property<string>("PinHash")
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)");
-
-                    b.Property<DateTimeOffset?>("PinLockedUntil")
-                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Role")
                         .IsRequired()

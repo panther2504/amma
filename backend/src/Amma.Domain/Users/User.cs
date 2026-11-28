@@ -23,11 +23,21 @@ public class User : Entity
     public UserRole Role { get; set; } = UserRole.Mother;
     public bool IsActive { get; set; } = true;
     public DateTimeOffset? LastLoginAt { get; set; }
+}
 
-    /// <summary>PBKDF2 hash of the user's PIN (PIN sign-in mode only).</summary>
+/// <summary>
+/// A phone/e-mail that can sign in to an account with its own PIN (PIN mode). Several logins can share one
+/// account, e.g. a mother and her husband both tracking the same pregnancy, each with their own PIN.
+/// </summary>
+public class LoginIdentity : Entity, IUserOwned
+{
+    public Guid UserId { get; set; }
+    public string Destination { get; set; } = "";
+    /// <summary>PBKDF2 hash of this person's PIN.</summary>
     public string? PinHash { get; set; }
     public int FailedPinAttempts { get; set; }
     public DateTimeOffset? PinLockedUntil { get; set; }
+    public DateTimeOffset? LastLoginAt { get; set; }
 }
 
 public enum OtpPurpose { Login = 0, FamilyInvite = 1 }
@@ -50,6 +60,8 @@ public class RefreshToken : Entity, IUserOwned
     public DateTimeOffset ExpiresAt { get; set; }
     public DateTimeOffset? RevokedAt { get; set; }
     public Guid? ReplacedById { get; set; }
+    /// <summary>Which login (phone) this session belongs to, in PIN mode.</summary>
+    public Guid? LoginIdentityId { get; set; }
     public bool IsActive => RevokedAt is null && ExpiresAt > DateTimeOffset.UtcNow;
 }
 

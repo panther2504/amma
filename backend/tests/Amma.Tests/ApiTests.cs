@@ -349,3 +349,37 @@ public class OfflineSyncTests
         Assert.DoesNotContain("secret", System.Text.Encoding.UTF8.GetString(stored.Data));
     }
 }
+
+public class SharedAccountTests
+{
+    [Fact]
+    public async Task Both_numbers_share_one_account_with_their_own_pins()
+    {
+        await using var f = new AmmaFactory().WithWebHostBuilder(b =>
+        {
+            b.UseSetting("SignIn:Mode", "pin");
+            b.UseSetting("SignIn:SharedAccount", "true");
+            b.UseSetting("SignIn:SetupCode", "our-family-secret");
+            b.UseSetting("Otp:AllowedDestinations:0", "9800000021");
+            b.UseSetting("Otp:AllowedDestinations:1", "9800000022");
+        });
+        var json = new JsonSerializerOptions(JsonSerializerDefaults.Web) { Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) } };
+        var c = f.CreateClient();
+        var wife = await (await c.PostAsJsonAsync("/api/v1/auth/pin/setup", new { destination = "9800000021", setupCode = "our-family-secret", pin = "2468" })).Content.ReadFromJsonAsync<AuthResponse>(json);
+        var husband = await (await c.PostAsJsonAsync("/api/v1/auth/pin/setup", new { destination = "9800000022", setupCode = "our-family-secret", pin = "1357" })).Content.ReadFromJsonAsync<AuthResponse>(json);
+        Assert.True(wife!.IsNewUser);
+        Assert.False(husband!.IsNewUser);
+        Assert.Equal(wife.User.Id, husband.User.Id);
+
+        // Each keeps their own PIN.
+        Assert.Equal(HttpStatusCode.BadRequest, (await c.PostAsJsonAsync("/api/v1/auth/pin/login", new { destination = "9800000022", pin = "2468" })).StatusCode);
+        (await c.PostAsJsonAsync("/api/v1/auth/pin/login", new { destination = "9800000022", pin = "1357" })).EnsureSuccessStatusCode();
+
+        // Changing the husband's PIN does not change the wife's.
+        var hc = f.CreateClient();
+        hc.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", husband.AccessToken);
+        Assert.Equal(HttpStatusCode.NoContent, (await hc.PutAsJsonAsync("/api/v1/me/pin", new { currentPin = "1357", newPin = "9753" })).StatusCode);
+        (await c.PostAsJsonAsync("/api/v1/auth/pin/login", new { destination = "9800000021", pin = "2468" })).EnsureSuccessStatusCode();
+        (await c.PostAsJsonAsync("/api/v1/auth/pin/login", new { destination = "9800000022", pin = "9753" })).EnsureSuccessStatusCode();
+    }
+}

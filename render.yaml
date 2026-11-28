@@ -26,6 +26,9 @@ services:
       # Private family use: PIN sign-in limited to your two numbers.
       - key: SignIn__Mode
         value: pin
+      # Both numbers sign in to ONE shared account (both track the same pregnancy), each with their own PIN.
+      - key: SignIn__SharedAccount
+        value: "true"
       - key: SignIn__SetupCode
         sync: false
       - key: Otp__AllowedDestinations__0

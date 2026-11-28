@@ -41,6 +41,8 @@ public class AmmaSignInOptions
     public string Mode { get; set; } = "otp";
     /// <summary>PIN mode: secret needed once to create a PIN, so nobody else can claim an allowed number first.</summary>
     public string SetupCode { get; set; } = "";
+    /// <summary>PIN mode: all allowed numbers sign in to ONE shared account (e.g. mother and husband tracking the same pregnancy).</summary>
+    public bool SharedAccount { get; set; }
     public int MaxPinAttempts { get; set; } = 5;
     public int LockoutMinutes { get; set; } = 15;
     public bool IsPin => string.Equals(Mode, "pin", StringComparison.OrdinalIgnoreCase);
@@ -70,7 +72,9 @@ public class TokenService(IOptions<JwtOptions> options, TimeProvider clock)
 {
     private readonly JwtOptions _o = options.Value;
 
-    public (string token, DateTimeOffset expires) CreateAccessToken(User user)
+    public const string LoginClaim = "lid";
+
+    public (string token, DateTimeOffset expires) CreateAccessToken(User user, Guid? loginId = null)
     {
         var expires = clock.GetUtcNow().AddMinutes(_o.AccessTokenMinutes);
         var claims = new List<Claim>
@@ -79,6 +83,7 @@ public class TokenService(IOptions<JwtOptions> options, TimeProvider clock)
             new(ClaimTypes.Role, user.Role.ToString()),
             new("name", user.Name),
         };
+        if (loginId is not null) claims.Add(new Claim(LoginClaim, loginId.Value.ToString()));
         var creds = new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_o.SigningKey)), SecurityAlgorithms.HmacSha256);
         var jwt = new JwtSecurityToken(_o.Issuer, _o.Audience, claims, expires: expires.UtcDateTime, signingCredentials: creds);
         return (new JwtSecurityTokenHandler().WriteToken(jwt), expires);

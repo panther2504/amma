@@ -18,6 +18,7 @@ public class AmmaDbContext(DbContextOptions<AmmaDbContext> options) : DbContext(
     // Users
     public DbSet<User> Users => Set<User>();
     public DbSet<OtpCode> OtpCodes => Set<OtpCode>();
+    public DbSet<LoginIdentity> LoginIdentities => Set<LoginIdentity>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<UserConsent> UserConsents => Set<UserConsent>();
     public DbSet<EmergencyContact> EmergencyContacts => Set<EmergencyContact>();
@@ -95,6 +96,7 @@ public class AmmaDbContext(DbContextOptions<AmmaDbContext> options) : DbContext(
             e.Property(x => x.Phone).HasMaxLength(20);
             e.Property(x => x.Name).HasMaxLength(120);
         });
+        m.Entity<LoginIdentity>(e => { e.HasIndex(x => x.Destination).IsUnique(); e.HasIndex(x => x.UserId); e.Property(x => x.Destination).HasMaxLength(254); });
         m.Entity<OtpCode>().HasIndex(x => new { x.Destination, x.Purpose, x.CreatedAt });
         m.Entity<RefreshToken>().HasIndex(x => x.TokenHash).IsUnique();
         m.Entity<RefreshToken>().HasIndex(x => x.UserId);

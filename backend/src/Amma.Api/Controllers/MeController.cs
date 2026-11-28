@@ -32,16 +32,20 @@ public class MeController(AuditService audit, IFileStorage storage) : ApiControl
         return me.ToDto(await ActivePregnancyAsync(ct) is not null);
     }
 
-    /// <summary>Changes the PIN (PIN sign-in mode).</summary>
+    /// <summary>Changes the signed-in person's own PIN (PIN sign-in mode).</summary>
     [HttpPut("pin")]
     public async Task<IActionResult> ChangePin(ChangePinRequest req, CancellationToken ct)
     {
         var me = await MeAsync(ct);
+        var lid = Guid.TryParse(User.FindFirst(Amma.Api.Auth.TokenService.LoginClaim)?.Value, out var id) ? id : (Guid?)null;
+        var login = lid is not null
+            ? await Db.LoginIdentities.FirstOrDefaultAsync(l => l.Id == lid && l.UserId == UserId, ct)
+            : await Db.LoginIdentities.FirstOrDefaultAsync(l => l.UserId == UserId && l.Destination == me.Phone, ct);
         var hasher = new Microsoft.AspNetCore.Identity.PasswordHasher<User>();
-        if (me.PinHash is null || hasher.VerifyHashedPassword(me, me.PinHash, req.CurrentPin) == Microsoft.AspNetCore.Identity.PasswordVerificationResult.Failed)
+        if (login?.PinHash is null || hasher.VerifyHashedPassword(me, login.PinHash, req.CurrentPin) == Microsoft.AspNetCore.Identity.PasswordVerificationResult.Failed)
             return Problem(detail: "Your current PIN is not correct.", statusCode: 400);
-        me.PinHash = hasher.HashPassword(me, req.NewPin);
-        audit.Record(UserId, "auth.pin.change");
+        login.PinHash = hasher.HashPassword(me, req.NewPin);
+        audit.Record(UserId, "auth.pin.change", "LoginIdentity", login.Id);
         await Db.SaveChangesAsync(ct);
         return NoContent();
     }
@@ -170,7 +174,7 @@ public class MeController(AuditService audit, IFileStorage storage) : ApiControl
         foreach (var d in await Db.MedicalDocuments.Where(x => x.UserId == id).ToListAsync(ct))
             await storage.DeleteAsync(d.StorageKey, ct);
 
-        await RemoveAll<RefreshToken>(id, ct); await RemoveAll<UserConsent>(id, ct); await RemoveAll<EmergencyContact>(id, ct);
+        await RemoveAll<RefreshToken>(id, ct); await RemoveAll<LoginIdentity>(id, ct); await RemoveAll<UserConsent>(id, ct); await RemoveAll<EmergencyContact>(id, ct);
         await RemoveAll<PregnancyProfile>(id, ct); await RemoveAll<Domain.Care.Medication>(id, ct); await RemoveAll<Domain.Care.MedicationLog>(id, ct);
         await RemoveAll<Domain.Care.Appointment>(id, ct); await RemoveAll<Domain.Tracking.WaterLog>(id, ct); await RemoveAll<Domain.Tracking.WeightLog>(id, ct);
         await RemoveAll<Domain.Tracking.BloodPressureLog>(id, ct); await RemoveAll<Domain.Tracking.BloodSugarLog>(id, ct); await RemoveAll<Domain.Tracking.DailyLog>(id, ct);
