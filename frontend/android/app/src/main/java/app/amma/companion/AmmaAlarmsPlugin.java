@@ -121,6 +121,10 @@ public class AmmaAlarmsPlugin extends Plugin {
         call.resolve();
     }
 
+    private static Intent appDetails(Uri pkg) {
+        return new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, pkg);
+    }
+
     /** Sets the phone's ALARM volume (0-100%). Reminders ring on this volume even in silent mode. */
     @PluginMethod
     public void setAlarmVolume(PluginCall call) {
