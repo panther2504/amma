@@ -1,0 +1,36 @@
+# Render Blueprint: free web service running the API + web app in Docker.
+# Data lives in Neon PostgreSQL (DATABASE_URL); documents are stored in the database too.
+services:
+  - type: web
+    name: amma
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: ASPNETCORE_HTTP_PORTS
+        value: "8080"
+      - key: PORT
+        value: "8080"
+      # Neon connection string (postgresql://...); paste it in the Render dashboard.
+      - key: DATABASE_URL
+        sync: false
+      - key: Jwt__SigningKey
+        generateValue: true
+      - key: Storage__Provider
+        value: Database
+      - key: Storage__EncryptionKey
+        generateValue: true
+      # Private family use: PIN sign-in limited to your two numbers.
+      - key: SignIn__Mode
+        value: pin
+      - key: SignIn__SetupCode
+        sync: false
+      - key: Otp__AllowedDestinations__0
+        sync: false
+      - key: Otp__AllowedDestinations__1
+        sync: false
+      - key: Content__IncludeUnreviewed
+        value: "true"

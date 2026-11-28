@@ -1,0 +1,9 @@
+**/bin
+**/obj
+**/node_modules
+frontend/dist
+frontend/android
+backend/src/Amma.Api/wwwroot
+backend/src/Amma.Api/data
+.git
+docs

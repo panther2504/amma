@@ -100,3 +100,23 @@ public class SafetyTests
     [InlineData(55, SugarContext.Random, "urgent")]
     public void Blood_sugar_advisory(int mg, SugarContext ctx, string? level) => Assert.Equal(level, HealthAdvisor.ForBloodSugar(mg, ctx)?.Level);
 }
+
+public class ConnectionStringTests
+{
+    [Fact]
+    public void Converts_neon_style_uri()
+    {
+        var cs = Amma.Infrastructure.ConnectionStrings.ToNpgsql("postgresql://amma_user:p%40ss@ep-cool-name-123.ap-southeast-1.aws.neon.tech/amma?sslmode=require");
+        var b = new Npgsql.NpgsqlConnectionStringBuilder(cs);
+        Assert.Equal("ep-cool-name-123.ap-southeast-1.aws.neon.tech", b.Host);
+        Assert.Equal(5432, b.Port);
+        Assert.Equal("amma", b.Database);
+        Assert.Equal("amma_user", b.Username);
+        Assert.Equal("p@ss", b.Password);
+        Assert.Equal(Npgsql.SslMode.Require, b.SslMode);
+    }
+
+    [Fact]
+    public void Leaves_keyword_strings_alone() =>
+        Assert.Equal("Host=localhost;Database=amma", Amma.Infrastructure.ConnectionStrings.ToNpgsql("Host=localhost;Database=amma"));
+}

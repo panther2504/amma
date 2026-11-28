@@ -1534,6 +1534,54 @@ namespace Amma.Infrastructure.Persistence.Migrations
 
                     b.ToTable("UserConsents");
                 });
+
+            modelBuilder.Entity("Amma.Infrastructure.Persistence.IdempotencyRecord", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Key")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Body")
+                        .HasMaxLength(65536)
+                        .HasColumnType("character varying(65536)");
+
+                    b.Property<string>("ContentType")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("StatusCode")
+                        .HasColumnType("integer");
+
+                    b.HasKey("UserId", "Key");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.ToTable("IdempotencyRecords");
+                });
+
+            modelBuilder.Entity("Amma.Infrastructure.Storage.StoredFile", b =>
+                {
+                    b.Property<string>("Key")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<byte[]>("Data")
+                        .IsRequired()
+                        .HasColumnType("bytea");
+
+                    b.HasKey("Key");
+
+                    b.ToTable("StoredFiles");
+                });
 #pragma warning restore 612, 618
         }
     }

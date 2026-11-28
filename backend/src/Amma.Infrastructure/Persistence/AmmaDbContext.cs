@@ -8,6 +8,7 @@ using Amma.Domain.Notifications;
 using Amma.Domain.Pregnancy;
 using Amma.Domain.Tracking;
 using Amma.Domain.Users;
+using Amma.Infrastructure.Storage;
 using Microsoft.EntityFrameworkCore;
 
 namespace Amma.Infrastructure.Persistence;
@@ -46,6 +47,10 @@ public class AmmaDbContext(DbContextOptions<AmmaDbContext> options) : DbContext(
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<NotificationPreference> NotificationPreferences => Set<NotificationPreference>();
     public DbSet<AssistantMessage> AssistantMessages => Set<AssistantMessage>();
+
+    // Infrastructure
+    public DbSet<StoredFile> StoredFiles => Set<StoredFile>();
+    public DbSet<IdempotencyRecord> IdempotencyRecords => Set<IdempotencyRecord>();
 
     // Content
     public DbSet<PregnancyWeek> PregnancyWeeks => Set<PregnancyWeek>();
@@ -124,6 +129,15 @@ public class AmmaDbContext(DbContextOptions<AmmaDbContext> options) : DbContext(
         m.Entity<AssistantMessage>().HasIndex(x => new { x.UserId, x.CreatedAt });
         m.Entity<AssistantMessage>().Property(x => x.Content).HasMaxLength(8000);
 
+        m.Entity<StoredFile>(e => { e.HasKey(x => x.Key); e.Property(x => x.Key).HasMaxLength(32); });
+        m.Entity<IdempotencyRecord>(e =>
+        {
+            e.HasKey(x => new { x.UserId, x.Key });
+            e.Property(x => x.Key).HasMaxLength(100);
+            e.Property(x => x.Body).HasMaxLength(65536);
+            e.HasIndex(x => x.CreatedAt);
+        });
+
         m.Entity<PregnancyWeek>().HasIndex(x => new { x.Week, x.Language }).IsUnique();
         m.Entity<WeeklyGuide>().HasIndex(x => new { x.FromWeek, x.Language });
         m.Entity<FoodItem>().HasIndex(x => new { x.Language, x.Safety });
@@ -143,4 +157,15 @@ public class AmmaDbContext(DbContextOptions<AmmaDbContext> options) : DbContext(
         }
         return base.SaveChangesAsync(ct);
     }
+}
+
+/// <summary>Remembers the response to a write so a retried request (e.g. replayed after being offline) is not applied twice.</summary>
+public class IdempotencyRecord
+{
+    public Guid UserId { get; set; }
+    public string Key { get; set; } = "";
+    public int StatusCode { get; set; }
+    public string? ContentType { get; set; }
+    public string? Body { get; set; }
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 }

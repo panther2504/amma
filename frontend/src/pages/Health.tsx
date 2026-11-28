@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { post, put } from '../api/client'
-import { useAction, useHealth } from '../api/hooks'
-import type { Advisory, BpReading, Saved, WeightReading } from '../api/types'
+import { isQueued, queuePost, queuePut } from '../api/client'
+import { patchCache, useAction, useHealth } from '../api/hooks'
+import type { Advisory, BpReading, HealthSummary, Saved, WeightReading } from '../api/types'
 import { Info, SecHead, Skeleton } from '../ui/bits'
 import { Icon } from '../ui/Icon'
 import { PageFrame, usePages, useSheet, useToast } from '../ui/shell'
@@ -16,7 +16,8 @@ export function HealthPage() {
   const h = q.data
   const [symptoms, setSymptoms] = useState<string[]>([])
   useEffect(() => { if (h) setSymptoms(h.today.symptoms) }, [h])
-  const saveDaily = useAction((b: { mood?: number; symptoms?: string[] }) => put(`/tracking/daily/${iso(today())}`, b), [['health']])
+  const saveDaily = useAction((b: { mood?: number; symptoms?: string[] }) => queuePut(`/tracking/daily/${iso(today())}`, b), [['health']], undefined,
+    (qc, b) => patchCache<HealthSummary>(qc, ['health'], v => ({ ...v, today: { ...v.today, ...b } })))
 
   return (
     <PageFrame title="Health tracker" right={<button className="icon-btn" onClick={() => sheet.open(<LogSheet />)} aria-label="Log reading"><Icon name="plus" size={20} /></button>}>
@@ -106,16 +107,20 @@ function LogSheet() {
   const submit = async () => {
     const kg = parseFloat(f.kg), s = parseInt(f.s), d = parseInt(f.d), sl = parseFloat(f.sleep), sg = parseInt(f.sugar)
     const tasks: Promise<Saved<unknown> | unknown>[] = []
-    if (kg > 20 && kg < 250) tasks.push(post('/health/weights', { kg }))
-    if (s > 50 && d > 30) tasks.push(post('/health/blood-pressure', { systolic: s, diastolic: d }))
-    if (sl > 0 && sl < 24) tasks.push(put(`/tracking/daily/${iso(today())}`, { sleepHours: sl }))
-    if (sg > 20 && sg < 600) tasks.push(post('/health/blood-sugar', { mgDl: sg, context: f.ctx }))
+    if (kg > 20 && kg < 250) tasks.push(queuePost('/health/weights', { kg }))
+    if (s > 50 && d > 30) tasks.push(queuePost('/health/blood-pressure', { systolic: s, diastolic: d }))
+    if (sl > 0 && sl < 24) tasks.push(queuePut(`/tracking/daily/${iso(today())}`, { sleepHours: sl }))
+    if (sg > 20 && sg < 600) tasks.push(queuePost('/health/blood-sugar', { mgDl: sg, context: f.ctx }))
     if (!tasks.length) return toast('Please enter at least one value')
     setBusy(true)
     try {
       const results = await Promise.all(tasks)
       qcRefresh.mutate()
-      const adv = results.map(r => (r as Saved<unknown>)?.advisory).find(Boolean) as Advisory | undefined
+      // Offline: readings are checked on this phone too, so a high reading is never missed.
+      const offlineAdv: Advisory | undefined = results.some(isQueued) && s > 50 && d > 30 && (s >= 140 || d >= 90)
+        ? { level: s >= 160 || d >= 110 ? 'urgent' : 'attention', title: 'Please share this reading with your doctor', message: `Your reading of ${s}/${d} is higher than the commonly used reference range. Amma cannot diagnose — please contact your doctor. If you also have a severe headache, vision changes, upper tummy pain or sudden swelling, seek medical care immediately.` }
+        : undefined
+      const adv = (results.map(r => (r as Saved<unknown>)?.advisory).find(Boolean) as Advisory | undefined) ?? offlineAdv
       if (adv) {
         sheet.open(
           <>
@@ -125,7 +130,7 @@ function LogSheet() {
             <button className="btn ghost block" style={{ marginTop: 10 }} onClick={sheet.close}>OK</button>
           </>,
         )
-      } else { sheet.close(); toast('✅ Saved') }
+      } else { sheet.close(); toast(results.some(isQueued) ? '✅ Saved on this phone · will sync' : '✅ Saved') }
     } catch (e) { toast((e as Error).message) } finally { setBusy(false) }
   }
 

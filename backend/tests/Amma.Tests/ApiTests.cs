@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -293,5 +294,58 @@ public class PinSignInTests
         Assert.Equal(HttpStatusCode.BadRequest, (await c.PutAsJsonAsync("/api/v1/me/pin", new { currentPin = "0000", newPin = "8642" })).StatusCode);
         Assert.Equal(HttpStatusCode.NoContent, (await c.PutAsJsonAsync("/api/v1/me/pin", new { currentPin = "1357", newPin = "8642" })).StatusCode);
         (await f.CreateClient().PostAsJsonAsync("/api/v1/auth/pin/login", new { destination = "9800000012", pin = "8642" })).EnsureSuccessStatusCode();
+    }
+}
+
+public class OfflineSyncTests
+{
+    private static async Task<HttpClient> SignedIn(WebApplicationFactory<Program> f, string phone)
+    {
+        var c = f.CreateClient();
+        var json = new JsonSerializerOptions(JsonSerializerDefaults.Web) { Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) } };
+        var otp = await (await c.PostAsJsonAsync("/api/v1/auth/otp/request", new { destination = phone })).Content.ReadFromJsonAsync<OtpRequestResponse>(json);
+        var auth = await (await c.PostAsJsonAsync("/api/v1/auth/otp/verify", new { destination = phone, code = otp!.DevCode })).Content.ReadFromJsonAsync<AuthResponse>(json);
+        c.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", auth!.AccessToken);
+        return c;
+    }
+
+    [Fact]
+    public async Task Replayed_writes_with_same_idempotency_key_apply_once()
+    {
+        await using var f = new AmmaFactory();
+        var c = await SignedIn(f, "9811100001");
+        HttpRequestMessage Req() => new(HttpMethod.Post, "/api/v1/appointments")
+        {
+            Content = JsonContent.Create(new { title = "Scan", date = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(2).ToString("yyyy-MM-dd"), time = "10:00" }),
+            Headers = { { "Idempotency-Key", "outbox-abc-1" } },
+        };
+        var first = await c.SendAsync(Req());
+        var second = await c.SendAsync(Req());
+        Assert.Equal(HttpStatusCode.Created, first.StatusCode);
+        Assert.Equal(HttpStatusCode.Created, second.StatusCode);
+        Assert.True(second.Headers.Contains("Idempotent-Replayed"));
+        Assert.Equal(await first.Content.ReadAsStringAsync(), await second.Content.ReadAsStringAsync());
+        Assert.Equal(1, System.Text.Json.JsonDocument.Parse(await c.GetStringAsync("/api/v1/appointments")).RootElement.GetArrayLength());
+    }
+
+    [Fact]
+    public async Task Documents_can_be_stored_in_the_database_encrypted()
+    {
+        await using var f = new AmmaFactory().WithWebHostBuilder(b =>
+        {
+            b.UseSetting("Storage:Provider", "Database");
+            b.UseSetting("Storage:EncryptionKey", Convert.ToBase64String(new byte[32].Select((_, i) => (byte)i).ToArray()));
+        });
+        var c = await SignedIn(f, "9811100002");
+        var form = new MultipartFormDataContent();
+        var file = new ByteArrayContent("%PDF-1.4 secret"u8.ToArray());
+        file.Headers.ContentType = new MediaTypeHeaderValue("application/pdf");
+        form.Add(file, "file", "scan.pdf"); form.Add(new StringContent("Scan"), "title"); form.Add(new StringContent("Ultrasound"), "category");
+        var doc = await (await c.PostAsync("/api/v1/documents", form)).Content.ReadFromJsonAsync<DocumentDto>(new JsonSerializerOptions(JsonSerializerDefaults.Web) { Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) } });
+        Assert.Equal("%PDF-1.4 secret", System.Text.Encoding.UTF8.GetString(await c.GetByteArrayAsync($"/api/v1/documents/{doc!.Id}/download")));
+
+        using var scope = f.Services.CreateScope();
+        var stored = scope.ServiceProvider.GetRequiredService<Amma.Infrastructure.Persistence.AmmaDbContext>().StoredFiles.Single();
+        Assert.DoesNotContain("secret", System.Text.Encoding.UTF8.GetString(stored.Data));
     }
 }

@@ -81,8 +81,8 @@ builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<Amma.Api.Infrastructure.UnauthorizedExceptionHandler>();
 builder.Services.AddOpenApi();
 builder.Services.AddCors(o => o.AddDefaultPolicy(p => p
-    .WithOrigins(config.GetSection("Cors:Origins").Get<string[]>() ?? [])
-    .AllowAnyHeader().AllowAnyMethod()));
+    .WithOrigins([.. config.GetSection("Cors:Origins").Get<string[]>() ?? [], "https://localhost", "capacitor://localhost"])
+    .AllowAnyHeader().AllowAnyMethod().WithExposedHeaders("Idempotent-Replayed", "Content-Disposition")));
 builder.Services.AddHealthChecks();
 
 var app = builder.Build();
@@ -108,6 +108,7 @@ app.UseCors();
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseMiddleware<Amma.Api.Infrastructure.IdempotencyMiddleware>();
 app.MapControllers();
 app.MapHealthChecks("/health");
 // Unknown API routes are real 404s; everything else is handled by the single-page app.

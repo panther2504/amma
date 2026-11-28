@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { put } from '../api/client'
-import { useAction, useBag, useContent } from '../api/hooks'
+import { queuePut } from '../api/client'
+import { patchCache, useAction, useBag, useContent } from '../api/hooks'
+import type { HospitalBag } from '../api/types'
 import { Check, Info, SecHead, Skeleton } from '../ui/bits'
 import { Icon } from '../ui/Icon'
 import { PageFrame, useApp, useSheet } from '../ui/shell'
@@ -52,7 +53,11 @@ function Breathing() {
 
 export function BagPage() {
   const bag = useBag()
-  const set = useAction((a: { key: string; packed: boolean }) => put(`/tracking/hospital-bag/${a.key}`, { packed: a.packed }), [['bag']])
+  const set = useAction((a: { key: string; packed: boolean }) => queuePut(`/tracking/hospital-bag/${a.key}`, { packed: a.packed }), [['bag']], undefined,
+    (qc, a) => patchCache<HospitalBag>(qc, ['bag'], v => {
+      const items = v.items.map(i => (i.key === a.key ? { ...i, packed: a.packed } : i))
+      return { items, percentPacked: Math.round((items.filter(i => i.packed).length * 100) / (items.length || 1)) }
+    }))
   const groups = ['Mother', 'Baby', 'Documents']
   const b = bag.data
   return (

@@ -1,29 +1,10 @@
-import { useMutation, useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query'
-import { get } from './client'
+import { useMutation, useQuery, useQueryClient, type QueryClient, type QueryKey } from '@tanstack/react-query'
+import { get, isQueued } from './client'
 import type * as T from './types'
 
-const CONTENT_CACHE = 'amma.content.v1'
-
-function cachedContent(lang: string): T.ContentBundle | undefined {
-  try {
-    const raw = localStorage.getItem(`${CONTENT_CACHE}.${lang}`)
-    return raw ? (JSON.parse(raw) as T.ContentBundle) : undefined
-  } catch { return undefined }
-}
-
-/** Educational content, cached on the device so essential information works offline. */
+/** Educational content. Cached on the device (with everything else) so it works offline. */
 export function useContent(lang: string = 'en') {
-  return useQuery({
-    queryKey: ['content', lang],
-    queryFn: async () => {
-      const b = await get<T.ContentBundle>(`/content/bundle?lang=${lang}`)
-      try { localStorage.setItem(`${CONTENT_CACHE}.${lang}`, JSON.stringify(b)) } catch { /* quota */ }
-      return b
-    },
-    initialData: () => cachedContent(lang),
-    initialDataUpdatedAt: 0,
-    staleTime: 10 * 60_000,
-  })
+  return useQuery({ queryKey: ['content', lang], queryFn: () => get<T.ContentBundle>(`/content/bundle?lang=${lang}`), staleTime: 10 * 60_000 })
 }
 
 export const useDashboard = () => useQuery({ queryKey: ['dashboard'], queryFn: () => get<T.Dashboard>('/dashboard') })
@@ -44,14 +25,25 @@ export const useConsents = () => useQuery({ queryKey: ['consents'], queryFn: () 
 export const useContacts = () => useQuery({ queryKey: ['contacts'], queryFn: () => get<T.EmergencyContact[]>('/me/emergency-contacts') })
 export const useChatHistory = () => useQuery({ queryKey: ['chat'], queryFn: () => get<T.AssistantMessage[]>('/assistant/messages'), staleTime: Infinity })
 
-/** A mutation that refreshes the given queries when it succeeds. */
-export function useAction<A, R>(fn: (a: A) => Promise<R>, invalidate: QueryKey[] = [], onSuccess?: (r: R, a: A) => void) {
+/**
+ * A mutation that refreshes the given queries when it succeeds.
+ * `optimistic` updates the cached data immediately, so offline changes show up straight away;
+ * when a change was queued offline the refresh is skipped until it syncs.
+ */
+export function useAction<A, R>(fn: (a: A) => Promise<R>, invalidate: QueryKey[] = [], onSuccess?: (r: R, a: A) => void, optimistic?: (qc: QueryClient, a: A) => void) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: fn,
+    onMutate: a => { optimistic?.(qc, a) },
     onSuccess: async (r, a) => {
       onSuccess?.(r, a)
-      await Promise.all(invalidate.map(k => qc.invalidateQueries({ queryKey: k })))
+      if (!isQueued(r)) await Promise.all(invalidate.map(k => qc.invalidateQueries({ queryKey: k })))
     },
+    onError: () => { if (optimistic) invalidate.forEach(k => qc.invalidateQueries({ queryKey: k })) },
   })
+}
+
+/** Helper for optimistic cache edits. */
+export function patchCache<D>(qc: QueryClient, key: QueryKey, fn: (d: D) => D) {
+  qc.setQueryData<D>(key, d => (d === undefined ? d : fn(d)))
 }

@@ -95,7 +95,11 @@ public class ReminderWorker(IServiceScopeFactory scopes, ILogger<ReminderWorker>
             }
         }
 
-        if (created.Count == 0) return;
+        // Housekeeping: idempotency keys are only needed for a few days.
+        var cutoff = clock.GetUtcNow().AddDays(-7);
+        db.IdempotencyRecords.RemoveRange(await db.IdempotencyRecords.Where(r => r.CreatedAt < cutoff).Take(500).ToListAsync(ct));
+
+        if (created.Count == 0) { await db.SaveChangesAsync(ct); return; }
         db.Notifications.AddRange(created);
         await db.SaveChangesAsync(ct);
         foreach (var n in created) await push.SendAsync(n, ct);

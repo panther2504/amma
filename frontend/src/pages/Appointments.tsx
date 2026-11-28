@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { post } from '../api/client'
-import { useAction, useAppointments, useContent } from '../api/hooks'
-import type { SaveAppointment } from '../api/types'
+import { isQueued, queuePost } from '../api/client'
+import { patchCache, useAction, useAppointments, useContent } from '../api/hooks'
+import type { Appointment, SaveAppointment } from '../api/types'
 import { Empty, SecHead, Segment } from '../ui/bits'
 import { Icon } from '../ui/Icon'
 import { PageFrame, useApp, usePages, useSheet, useToast } from '../ui/shell'
@@ -15,7 +15,8 @@ export function AppointmentsPage() {
   const toast = useToast()
   const { open } = usePages()
   const [tab, setTab] = useState(0)
-  const done = useAction((id: string) => post(`/appointments/${id}/status?status=completed`), [['appts'], ['dashboard']], () => toast('✅ Appointment completed'))
+  const done = useAction((id: string) => queuePost(`/appointments/${id}/status?status=completed`), [['appts'], ['dashboard']], () => toast('✅ Appointment completed'),
+    (qc, id) => patchCache<Appointment[]>(qc, ['appts'], v => v.map(a => (a.id === id ? { ...a, status: 'completed' } : a))))
   const all = q.data ?? []
   const up = all.filter(a => a.status === 'scheduled').sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time))
   const past = all.filter(a => a.status === 'completed').sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time))
@@ -61,7 +62,9 @@ function ApptForm() {
   const sheet = useSheet()
   const toast = useToast()
   const [f, setF] = useState({ title: '', doctorName: '', location: '', date: iso(addDays(today(), 7)), time: '10:00', purpose: '', remind: '1440' })
-  const save = useAction((b: SaveAppointment) => post('/appointments', b), [['appts'], ['dashboard']], () => { sheet.close(); toast('📅 Appointment saved') })
+  const save = useAction((b: SaveAppointment) => queuePost('/appointments', b), [['appts'], ['dashboard']],
+    r => { sheet.close(); toast(isQueued(r) ? '📅 Saved on this phone · will sync' : '📅 Appointment saved') },
+    (qc, b) => patchCache<Appointment[]>(qc, ['appts'], v => [...v, { id: `local-${Date.now()}`, category: 'consultation', status: 'scheduled', reminderMinutesBefore: 1440, ...b }]))
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setF({ ...f, [k]: e.target.value })
   return (
     <>

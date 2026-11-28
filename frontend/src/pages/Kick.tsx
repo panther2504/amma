@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { post } from '../api/client'
-import { useAction, useKicks } from '../api/hooks'
+import { isQueued, queuePost } from '../api/client'
+import { patchCache, useAction, useKicks } from '../api/hooks'
+import type { KickSession } from '../api/types'
 import { Info, SecHead } from '../ui/bits'
 import { Icon } from '../ui/Icon'
 import { PageFrame, useToast } from '../ui/shell'
@@ -22,8 +23,13 @@ export function KickPage() {
   useEffect(() => { try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(s)) } catch { /* ignore */ } }, [s])
   useEffect(() => { if (!s.start) return; const t = setInterval(() => tick(x => x + 1), 1000); return () => clearInterval(t) }, [s.start])
 
-  const save = useAction(() => post('/health/kick-sessions', { startedAt: new Date(s.start!).toISOString(), endedAt: new Date().toISOString(), movements: s.n }), [['kicks']],
-    () => { setS({ n: 0, start: null }); toast('👣 Session saved') })
+  const save = useAction((k: KickSession) => queuePost('/health/kick-sessions', { startedAt: k.startedAt, endedAt: k.endedAt, movements: k.movements }), [['kicks']],
+    r => { setS({ n: 0, start: null }); toast(isQueued(r) ? '👣 Session saved on this phone · will sync' : '👣 Session saved') },
+    (qc, k) => patchCache<KickSession[]>(qc, ['kicks'], v => [k, ...v]))
+  const finish = () => {
+    const startedAt = new Date(s.start!).toISOString(), endedAt = new Date().toISOString()
+    save.mutate({ id: `local-${Date.now()}`, startedAt, endedAt, movements: s.n, durationMinutes: Math.max(1, Math.round((Date.now() - s.start!) / 60000)) })
+  }
 
   const elapsed = s.start ? Math.floor((Date.now() - s.start) / 1000) : 0
   const tap = () => {
@@ -53,7 +59,7 @@ export function KickPage() {
         <div><b>{last?.movements ?? '—'}</b><small>Last session</small></div>
       </div>
       <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
-        <button className="btn block" disabled={save.isPending} onClick={() => (s.n ? save.mutate() : toast('Tap the circle when you feel a movement'))}>Save session</button>
+        <button className="btn block" disabled={save.isPending} onClick={() => (s.n ? finish() : toast('Tap the circle when you feel a movement'))}>Save session</button>
         <button className="btn soft" onClick={() => setS({ n: 0, start: null })}>Reset</button>
       </div>
       <Info style={{ marginTop: 16 }}>Every baby has their own pattern — there is no single right number. Get to know what is normal for <b>your</b> baby.</Info>

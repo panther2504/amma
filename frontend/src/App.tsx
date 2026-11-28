@@ -1,9 +1,14 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { hasStoredSession, logout, onSignedOut, refreshSession } from './api/client'
+import { OfflineError, cachedUser, get, hasStoredSession, logout, onOutboxChange, onSignedOut, refreshSession } from './api/client'
+import { flushOutbox, pendingCount } from './lib/sync'
+import { onReminderTap, syncReminders } from './lib/reminders'
+import { useAppointments, useMedications, useNotificationPrefs } from './api/hooks'
+import { isNative } from './lib/localdb'
+import { App as NativeApp } from '@capacitor/app'
 import type { AuthResponse, User } from './api/types'
 import { translate } from './lib/i18n'
-import { AppContext, PageStack, SheetProvider, ToastProvider, stagger, useRipple, type PageRenderer } from './ui/shell'
+import { AppContext, useApp as useAppCtx, usePages, PageStack, SheetProvider, ToastProvider, stagger, useRipple, type PageRenderer } from './ui/shell'
 import { Icon, type IconName } from './ui/Icon'
 import { Onboarding, Splash } from './screens/Intro'
 import { Login } from './screens/Login'
@@ -50,9 +55,12 @@ export default function App() {
   // Boot: show the splash briefly while restoring the session.
   useEffect(() => {
     const minDelay = new Promise(r => setTimeout(r, 1600))
-    const restore = hasStoredSession() ? refreshSession().catch(() => null) : Promise.resolve(null)
-    Promise.all([restore, minDelay]).then(([auth]) => {
-      if (auth) enter(auth.user)
+    // Offline (or the server is waking up too slowly): open with the last signed-in user and saved data.
+    const restore = hasStoredSession()
+      ? refreshSession().then(a => a?.user ?? null, async e => (e instanceof OfflineError ? cachedUser() : null))
+      : Promise.resolve(null)
+    Promise.all([restore, minDelay]).then(([u]) => {
+      if (u) enter(u)
       else setStage(localStorage.getItem(SEEN_ONBOARDING) ? 'login' : 'onboard')
     })
   }, [enter])
@@ -77,7 +85,8 @@ export default function App() {
           {stage === 'setup' && user && <Setup user={user} onDone={u => { setUser(u); qc.invalidateQueries(); setStage('app') }} />}
           {stage === 'app' && ctx && (
             <AppContext.Provider value={ctx}>
-              <PageStack pages={PAGES}><Shell familyOnly={isFamilyOnly(ctx.user)} /></PageStack>
+              <SyncManager />
+              <PageStack pages={PAGES}><DeviceReminders /><Shell familyOnly={isFamilyOnly(ctx.user)} /></PageStack>
             </AppContext.Provider>
           )}
         </SheetProvider></ToastProvider></div>
@@ -142,12 +151,53 @@ function Shell({ familyOnly }: { familyOnly: boolean }) {
   )
 }
 
+/** Sends changes saved offline when the connection returns, the app resumes, and every minute. */
+function SyncManager() {
+  const qc = useQueryClient()
+  const { lang } = useAppCtx()
+  useEffect(() => {
+    // Load every main screen's data while online so all of it is saved on the phone for offline use.
+    const warm = () => {
+      const pre: [string[], string][] = [[['content', lang], `/content/bundle?lang=${lang}`], [['doses'], '/medications/doses'], [['meds'], '/medications'],
+        [['appts'], '/appointments'], [['health'], '/health/summary'], [['kicks'], '/health/kick-sessions'], [['bag'], '/tracking/hospital-bag'],
+        [['pregnancy'], '/pregnancy'], [['contacts'], '/me/emergency-contacts'], [['prefs'], '/notifications/preferences']]
+      pre.forEach(([key, path]) => qc.prefetchQuery({ queryKey: key, queryFn: () => get(path), staleTime: 60_000 }).catch(() => {}))
+    }
+    const run = () => { flushOutbox(qc).then(warm).catch(() => {}) }
+    run()
+    addEventListener('online', run)
+    const t = setInterval(run, 60_000)
+    const sub = isNative() ? NativeApp.addListener('resume', run) : null
+    return () => { removeEventListener('online', run); clearInterval(t); sub?.then(h => h.remove()) }
+  }, [qc, lang])
+  return null
+}
+
+/** Keeps the phone's scheduled reminders in step with medicines, appointments and notification settings. */
+function DeviceReminders() {
+  const meds = useMedications()
+  const appts = useAppointments()
+  const prefs = useNotificationPrefs()
+  const { open } = usePages()
+  useEffect(() => onReminderTap(open), [open])
+  useEffect(() => {
+    if (meds.data && appts.data) syncReminders(meds.data, appts.data, prefs.data).catch(e => console.warn('reminders', e))
+  }, [meds.data, appts.data, prefs.data])
+  return null
+}
+
 function OfflineBar() {
   const [online, setOnline] = useState(navigator.onLine)
+  const [pending, setPending] = useState(0)
   useEffect(() => {
     const on = () => setOnline(true), off = () => setOnline(false)
+    const count = () => { pendingCount().then(setPending).catch(() => {}) }
+    count()
+    const unsub = onOutboxChange(count)
     addEventListener('online', on); addEventListener('offline', off)
-    return () => { removeEventListener('online', on); removeEventListener('offline', off) }
+    return () => { unsub(); removeEventListener('online', on); removeEventListener('offline', off) }
   }, [])
-  return online ? null : <div className="offline-bar" role="status">You're offline — showing saved information. Emergency numbers still work.</div>
+  if (online && !pending) return null
+  const waiting = pending ? `${pending} change${pending === 1 ? '' : 's'} saved on this phone will sync when you're online.` : ''
+  return <div className="offline-bar" role="status">{online ? waiting : `You're offline — showing saved information. ${waiting || 'Emergency numbers still work.'}`}</div>
 }

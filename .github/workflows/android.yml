@@ -1,0 +1,77 @@
+name: Android app
+
+# Builds the Amma Android app (APK) and publishes it as the "android-latest" release.
+# Repository settings needed:
+#   Variables: AMMA_API_URL                 e.g. https://amma.onrender.com
+#   Secrets:   ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD   (keeps the same signature so updates install over the old app)
+on:
+  workflow_dispatch:
+  push:
+    paths: ['frontend/**', '.github/workflows/android.yml']
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Check settings
+        env:
+          API: ${{ vars.AMMA_API_URL }}
+          KS: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$API" ]; then echo "::warning::Repository variable AMMA_API_URL is not set yet: building a test APK only (not published)."; fi
+          if [ -z "$KS" ]; then echo "::warning::No ANDROID_KEYSTORE_BASE64 secret: using a temporary key. You'd have to uninstall before each update."; fi
+
+      - run: npm ci --no-audit --no-fund
+      - name: Build web app
+        env:
+          VITE_API_BASE: ${{ vars.AMMA_API_URL }}
+        run: npx tsc -b && npx vite build
+      - run: npx cap sync android
+
+      - name: Signing key
+        env:
+          KS: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          PW: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          if [ -n "$KS" ]; then
+            echo "$KS" | base64 -d > android/app/amma.keystore
+            echo "AMMA_KEYSTORE_PASSWORD=$PW" >> "$GITHUB_ENV"
+          else
+            keytool -genkeypair -v -keystore android/app/amma.keystore -alias amma -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass temporary -keypass temporary -dname "CN=Amma"
+            echo "AMMA_KEYSTORE_PASSWORD=temporary" >> "$GITHUB_ENV"
+          fi
+
+      - name: Build APK
+        working-directory: frontend/android
+        run: ./gradlew --no-daemon assembleRelease && cp app/build/outputs/apk/release/app-release.apk ../Amma.apk
+
+      - name: Publish
+        if: ${{ vars.AMMA_API_URL != '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete android-latest -y --cleanup-tag || true
+          gh release create android-latest Amma.apk --prerelease --target "$GITHUB_SHA" \
+            --title "Amma Android app" --notes "Built from ${GITHUB_SHA::7}. Open this page on your phone, download Amma.apk and install it."
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Amma-apk
+          path: frontend/Amma.apk

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { post, put } from '../api/client'
-import { useAction, useDashboard } from '../api/hooks'
+import { isQueued, put, queuePost, queuePut } from '../api/client'
+import { patchCache, useAction, useDashboard } from '../api/hooks'
 import type { Appointment, Dashboard, Dose, User } from '../api/types'
 import { Check, Ring, SecHead, Skeleton, colorClass } from '../ui/bits'
 import { Icon } from '../ui/Icon'
@@ -11,9 +11,17 @@ import { daysUntil, fmt, hhmm, ordinal, parseDate, relDays, t12, vibrate } from 
 export function useDoseToggle() {
   const toast = useToast()
   return useAction(
-    (d: { dose: Dose; status: Dose['status'] }) => post(`/medications/${d.dose.medicationId}/log`, { time: hhmm(d.dose.time), status: d.status }),
+    (d: { dose: Dose; status: Dose['status'] }) => queuePost(`/medications/${d.dose.medicationId}/log`, { time: hhmm(d.dose.time), status: d.status }),
     [['dashboard'], ['doses']],
-    (_, d) => { if (d.status === 'taken') toast('✅ Marked as taken'); else if (d.status === 'skipped') toast('Marked as skipped') },
+    (r, d) => {
+      const suffix = isQueued(r) ? ' · will sync when online' : ''
+      if (d.status === 'taken') toast('✅ Marked as taken' + suffix); else if (d.status === 'skipped') toast('Marked as skipped' + suffix)
+    },
+    (qc, d) => {
+      const upd = (x: Dose) => (x.medicationId === d.dose.medicationId && x.time === d.dose.time ? { ...x, status: d.status } : x)
+      patchCache<Dashboard>(qc, ['dashboard'], v => ({ ...v, todaysMedicines: v.todaysMedicines.map(upd) }))
+      patchCache<Dose[]>(qc, ['doses'], v => v.map(upd))
+    },
   )
 }
 
@@ -50,7 +58,8 @@ function WaterCard({ water }: { water: Dashboard['water'] }) {
   const toast = useToast()
   const [n, setN] = useState(water.glasses)
   useEffect(() => setN(water.glasses), [water.glasses])
-  const save = useAction((g: number) => put('/tracking/water', { glasses: g }), [['dashboard'], ['health']])
+  const save = useAction((g: number) => queuePut('/tracking/water', { glasses: g }), [['dashboard'], ['health']], undefined,
+    (qc, g) => patchCache<Dashboard>(qc, ['dashboard'], v => ({ ...v, water: { ...v.water, glasses: g } })))
   const change = (d: number) => {
     const v = Math.max(0, Math.min(20, n + d))
     setN(v); save.mutate(v); vibrate(8)
@@ -81,7 +90,8 @@ export function HomeTab({ go }: { go: (tab: string) => void }) {
   const sheet = useSheet()
   const q = useDashboard()
   const toast = useToast()
-  const check = useAction((a: { key: string; done: boolean }) => put(`/tracking/checklist/${a.key}`, { done: a.done }), [['dashboard']])
+  const check = useAction((a: { key: string; done: boolean }) => queuePut(`/tracking/checklist/${a.key}`, { done: a.done }), [['dashboard']], undefined,
+    (qc, a) => patchCache<Dashboard>(qc, ['dashboard'], v => ({ ...v, checklist: { ...v.checklist, items: v.checklist.items.map(i => (i.key === a.key ? { ...i, done: a.done } : i)) } })))
   const [bar, setBar] = useState(0)
   const d = q.data
   const g = d?.pregnancy?.gestation
