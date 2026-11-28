@@ -3,7 +3,9 @@ name: Android app
 # Builds the Amma Android app (APK) and publishes it as the "android-latest" release.
 # Repository settings needed:
 #   Variables: AMMA_API_URL                 optional; defaults to the family server below
-#   Secrets:   ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD   (keeps the same signature so updates install over the old app)
+# Signing: every build must use the SAME key so updates install over the old app. The key comes from the
+# ANDROID_KEYSTORE_BASE64 / ANDROID_KEYSTORE_PASSWORD secrets if set, otherwise from the family server, which hands
+# it only to this repository's workflow (verified with GitHub's OIDC token - no stored secret needed).
 on:
   workflow_dispatch:
   push:
@@ -11,6 +13,7 @@ on:
 
 permissions:
   contents: write
+  id-token: write
 
 env:
   # The family's Render server. Override with the repository variable AMMA_API_URL.
@@ -54,10 +57,27 @@ jobs:
           KS: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           PW: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
         run: |
+          if [ -z "$KS" ]; then
+            # Ask the family server for the key, proving who we are with GitHub's OIDC token.
+            OIDC=$(curl -sS -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=amma-signing" | jq -r .value)
+            for i in 1 2 3 4 5 6; do   # the free server may need a minute to wake up
+              if curl -sS -f -m 90 -X POST -H "Authorization: Bearer $OIDC" "$API_URL/api/v1/ci/android-signing-key" -o key.json; then break; fi
+              sleep 15
+            done
+            if [ -s key.json ]; then
+              KS=$(jq -r .keystoreBase64 key.json); PW=$(jq -r .password key.json); rm key.json
+              echo "::add-mask::$PW"
+              echo "Using the signing key from the family server."
+            fi
+          fi
           if [ -n "$KS" ]; then
             echo "$KS" | base64 -d > android/app/amma.keystore
             echo "AMMA_KEYSTORE_PASSWORD=$PW" >> "$GITHUB_ENV"
+            ALIAS=$(keytool -list -keystore android/app/amma.keystore -storetype pkcs12 -storepass "$PW" 2>/dev/null | grep PrivateKeyEntry | head -1 | cut -d, -f1)
+            echo "AMMA_KEY_ALIAS=${ALIAS:-amma}" >> "$GITHUB_ENV"
+            echo "Signing with key alias '${ALIAS:-amma}'."
           else
+            echo "::warning::No signing key available: using a temporary key. The app must be uninstalled before installing this build."
             keytool -genkeypair -v -keystore android/app/amma.keystore -alias amma -keyalg RSA -keysize 2048 -validity 10000 \
               -storepass temporary -keypass temporary -dname "CN=Amma"
             echo "AMMA_KEYSTORE_PASSWORD=temporary" >> "$GITHUB_ENV"
@@ -73,7 +93,8 @@ jobs:
         run: |
           gh release delete android-latest -y --cleanup-tag || true
           gh release create android-latest Amma.apk --prerelease --target "$GITHUB_SHA" \
-            --title "Amma Android app" --notes "Built from ${GITHUB_SHA::7}. Open this page on your phone, download Amma.apk and install it."
+            --title "Amma Android app 1.0.${GITHUB_RUN_NUMBER}" \
+            --notes "$(printf 'Built from %s. Open this page on your phone, download Amma.apk and install it. Later versions update from inside the app.\nversionCode: %s\nversionName: 1.0.%s' "${GITHUB_SHA::7}" "$GITHUB_RUN_NUMBER" "$GITHUB_RUN_NUMBER")"
       - uses: actions/upload-artifact@v4
         with:
           name: Amma-apk

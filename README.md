@@ -101,15 +101,21 @@ How it fits together:
 
 ### 3. GitHub (builds the Android app)
 In the repository: **Settings → Secrets and variables → Actions**
-- **Variables** tab: add `AMMA_API_URL` = your Render URL.
-- **Secrets** tab: add `ANDROID_KEYSTORE_BASE64` and `ANDROID_KEYSTORE_PASSWORD` (a one-time signing key, so updates install over the old app).
-
+- Optional **Variables** tab: `AMMA_API_URL` = your Render URL (otherwise the URL in the workflow file is used).
 Then **Actions → Android app → Run workflow**. When it finishes, the APK is on the **Releases** page as `android-latest`.
 
 ### 4. Install on your phones
 Open the repository's Releases page on each phone, download **Amma.apk** and tap it. Allow "Install unknown apps" for your browser when Android asks. Open Amma, enter your mobile number, create your PIN (with the setup code), and allow notifications for reminders.
 
-To update later, run the workflow again and install the new APK over the old one. Your data stays.
+### Updates (inside the app)
+
+Amma checks for a new version when it starts and when you return to it (every few hours), and also from Profile → Settings → **Check for updates**. When there is one, tap **Update now**: the app downloads the new APK and opens Android's installer, where you tap **Update**. Android always asks for that one confirmation for apps installed outside the Play Store. The first time, Android also asks you to allow Amma to install apps.
+
+New versions are published whenever the Android workflow runs (on every push that changes `frontend/`, or manually from the Actions tab). Every build is signed with the same key, so updates install over the old app and keep your data:
+
+- The key is created once by the server and kept encrypted in the database.
+- The server hands it only to this repository's GitHub Actions run, which proves itself with GitHub's OIDC token (no stored secret).
+- If you prefer, set your own `ANDROID_KEYSTORE_BASE64` / `ANDROID_KEYSTORE_PASSWORD` repository secrets instead. Changing the key later means uninstalling and reinstalling once.
 
 ### Server settings reference
 

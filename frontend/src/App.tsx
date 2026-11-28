@@ -3,12 +3,14 @@ import { useQueryClient } from '@tanstack/react-query'
 import { OfflineError, cachedUser, get, hasStoredSession, logout, onOutboxChange, onSignedOut, refreshSession } from './api/client'
 import { flushOutbox, pendingCount } from './lib/sync'
 import { onReminderTap, syncReminders } from './lib/reminders'
+import { checkForUpdate, dueForCheck } from './lib/updates'
+import { UpdateSheet } from './ui/UpdateSheet'
 import { useAppointments, useMedications, useNotificationPrefs } from './api/hooks'
 import { isNative } from './lib/localdb'
 import { App as NativeApp } from '@capacitor/app'
 import type { AuthResponse, User } from './api/types'
 import { translate } from './lib/i18n'
-import { AppContext, useApp as useAppCtx, usePages, PageStack, SheetProvider, ToastProvider, stagger, useRipple, type PageRenderer } from './ui/shell'
+import { AppContext, useApp as useAppCtx, usePages, useSheet, PageStack, SheetProvider, ToastProvider, stagger, useRipple, type PageRenderer } from './ui/shell'
 import { Icon, type IconName } from './ui/Icon'
 import { Onboarding, Splash } from './screens/Intro'
 import { Login } from './screens/Login'
@@ -86,7 +88,7 @@ export default function App() {
           {stage === 'app' && ctx && (
             <AppContext.Provider value={ctx}>
               <SyncManager />
-              <PageStack pages={PAGES}><DeviceReminders /><Shell familyOnly={isFamilyOnly(ctx.user)} /></PageStack>
+              <PageStack pages={PAGES}><DeviceReminders /><UpdateChecker /><Shell familyOnly={isFamilyOnly(ctx.user)} /></PageStack>
             </AppContext.Provider>
           )}
         </SheetProvider></ToastProvider></div>
@@ -183,6 +185,22 @@ function DeviceReminders() {
   useEffect(() => {
     if (meds.data && appts.data) syncReminders(meds.data, appts.data, prefs.data).catch(e => console.warn('reminders', e))
   }, [meds.data, appts.data, prefs.data])
+  return null
+}
+
+/** Checks for a new app version on start and when the app comes back to the foreground (every few hours). */
+function UpdateChecker() {
+  const sheet = useSheet()
+  useEffect(() => {
+    if (!isNative()) return
+    const run = () => {
+      if (!dueForCheck()) return
+      checkForUpdate().then(r => { if (r) sheet.open(<UpdateSheet release={r} />) }).catch(() => {})
+    }
+    const t = setTimeout(run, 4000)
+    const sub = NativeApp.addListener('resume', run)
+    return () => { clearTimeout(t); sub.then(h => h.remove()) }
+  }, [sheet])
   return null
 }
 

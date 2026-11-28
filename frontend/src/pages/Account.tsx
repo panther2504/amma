@@ -5,6 +5,8 @@ import type { ConsentType, Diet, NotificationPrefs, Pregnancy, SavePregnancy, Us
 import { Choice, Info, SecHead, Skeleton, Switch } from '../ui/bits'
 import { Icon } from '../ui/Icon'
 import { MenuItem } from '../tabs/Profile'
+import { checkForUpdate, currentVersion } from '../lib/updates'
+import { UpdateSheet } from '../ui/UpdateSheet'
 import { PageFrame, useApp, useSheet, useToast } from '../ui/shell'
 import { fmt, gestationFromLmp, iso, today } from '../lib/util'
 
@@ -97,6 +99,7 @@ export function SettingsPage() {
         ))}
       </div>}
       <PinSection />
+      <AppVersionSection />
       <SecHead title="Language" />
       <Choice value={lang} onChange={v => v !== lang && lng.mutate(v)} options={[['en', 'English'], ['ta', <span className="ta" key="ta">தமிழ்</span>]]} />
       <p className="small muted" style={{ marginTop: 10, lineHeight: 1.5 }}>Tamil translations of all medical content are being reviewed; untranslated content is shown in English.</p>
@@ -184,6 +187,31 @@ function PinSection() {
     <>
       <SecHead title="Security" />
       <div className="menu"><MenuItem c="c-lav" i="lock" label="Change PIN" onClick={() => sheet.open(<Form />)} /></div>
+    </>
+  )
+}
+
+function AppVersionSection() {
+  const toast = useToast()
+  const sheet = useSheet()
+  const [ver, setVer] = useState<{ name: string; code: number } | null>(null)
+  const [busy, setBusy] = useState(false)
+  useEffect(() => { currentVersion().then(setVer).catch(() => {}) }, [])
+  if (!ver) return null
+  const check = async () => {
+    setBusy(true)
+    try {
+      const r = await checkForUpdate()
+      if (r) sheet.open(<UpdateSheet release={r} />)
+      else toast('✅ You have the latest version')
+    } catch { toast("Couldn't check for updates. Try again when you're online.") } finally { setBusy(false) }
+  }
+  return (
+    <>
+      <SecHead title="App" />
+      <div className="menu">
+        <div className="mi"><b>Version {ver.name} ({ver.code})</b><button className="btn sm ghost" disabled={busy} onClick={check}>{busy ? 'Checking…' : 'Check for updates'}</button></div>
+      </div>
     </>
   )
 }

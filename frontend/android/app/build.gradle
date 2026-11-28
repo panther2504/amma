@@ -20,8 +20,9 @@ android {
         release {
             // The keystore is provided by CI (GitHub secret) and never committed.
             storeFile file('amma.keystore')
+            storeType 'pkcs12'
             storePassword System.getenv('AMMA_KEYSTORE_PASSWORD')
-            keyAlias 'amma'
+            keyAlias System.getenv('AMMA_KEY_ALIAS') ?: 'amma'
             keyPassword System.getenv('AMMA_KEYSTORE_PASSWORD')
         }
     }
