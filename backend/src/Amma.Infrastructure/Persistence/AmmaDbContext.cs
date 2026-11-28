@@ -52,6 +52,7 @@ public class AmmaDbContext(DbContextOptions<AmmaDbContext> options) : DbContext(
     // Infrastructure
     public DbSet<StoredFile> StoredFiles => Set<StoredFile>();
     public DbSet<IdempotencyRecord> IdempotencyRecords => Set<IdempotencyRecord>();
+    public DbSet<AppSecret> AppSecrets => Set<AppSecret>();
 
     // Content
     public DbSet<PregnancyWeek> PregnancyWeeks => Set<PregnancyWeek>();
@@ -132,6 +133,7 @@ public class AmmaDbContext(DbContextOptions<AmmaDbContext> options) : DbContext(
         m.Entity<AssistantMessage>().Property(x => x.Content).HasMaxLength(8000);
 
         m.Entity<StoredFile>(e => { e.HasKey(x => x.Key); e.Property(x => x.Key).HasMaxLength(32); });
+        m.Entity<AppSecret>(e => { e.HasKey(x => x.Name); e.Property(x => x.Name).HasMaxLength(64); });
         m.Entity<IdempotencyRecord>(e =>
         {
             e.HasKey(x => new { x.UserId, x.Key });
@@ -169,5 +171,13 @@ public class IdempotencyRecord
     public int StatusCode { get; set; }
     public string? ContentType { get; set; }
     public string? Body { get; set; }
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+}
+
+/// <summary>A server-generated secret (e.g. the Android signing key), stored encrypted with Storage:EncryptionKey.</summary>
+public class AppSecret
+{
+    public string Name { get; set; } = "";
+    public byte[] Value { get; set; } = [];
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 }

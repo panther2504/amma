@@ -120,3 +120,18 @@ public class ConnectionStringTests
     public void Leaves_keyword_strings_alone() =>
         Assert.Equal("Host=localhost;Database=amma", Amma.Infrastructure.ConnectionStrings.ToNpgsql("Host=localhost;Database=amma"));
 }
+
+public class SigningKeyTests
+{
+    [Fact]
+    public void Generated_signing_key_is_a_loadable_pkcs12_keystore()
+    {
+        var k = Amma.Api.Controllers.AndroidSigningKeys.Generate();
+        var bytes = Convert.FromBase64String(k.KeystoreBase64);
+        using var cert = System.Security.Cryptography.X509Certificates.X509CertificateLoader.LoadPkcs12(bytes, k.Password);
+        Assert.True(cert.HasPrivateKey);
+        Assert.True(cert.NotAfter > DateTime.UtcNow.AddYears(25));
+        var dump = Environment.GetEnvironmentVariable("AMMA_DUMP_KEYSTORE");
+        if (!string.IsNullOrEmpty(dump)) { File.WriteAllBytes(dump, bytes); File.WriteAllText(dump + ".pw", k.Password); }
+    }
+}

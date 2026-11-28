@@ -17,6 +17,9 @@ var config = builder.Configuration;
 builder.Services.Configure<JwtOptions>(config.GetSection("Jwt"));
 builder.Services.Configure<OtpOptions>(config.GetSection("Otp"));
 builder.Services.Configure<ContentOptions>(config.GetSection("Content"));
+builder.Services.Configure<Amma.Api.Controllers.AppReleaseOptions>(config.GetSection("AppRelease"));
+builder.Services.AddMemoryCache();
+builder.Services.AddHttpClient("github", c => { c.DefaultRequestHeaders.UserAgent.ParseAdd("amma-server"); c.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json"); c.Timeout = TimeSpan.FromSeconds(15); });
 builder.Services.Configure<AmmaSignInOptions>(config.GetSection("SignIn"));
 var signIn = config.GetSection("SignIn").Get<AmmaSignInOptions>() ?? new AmmaSignInOptions();
 if (signIn.IsPin)
@@ -41,6 +44,7 @@ builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<ContentQuery>();
 builder.Services.AddScoped<AuditService>();
 builder.Services.AddScoped<DoseService>();
+builder.Services.AddScoped<Amma.Api.Controllers.AndroidSigningKeys>();
 builder.Services.AddScoped<IAssistantResponder, RuleBasedResponder>();
 builder.Services.AddSingleton<IOtpSender, LoggingOtpSender>();
 builder.Services.AddSingleton<IPushSender, NoopPushSender>();

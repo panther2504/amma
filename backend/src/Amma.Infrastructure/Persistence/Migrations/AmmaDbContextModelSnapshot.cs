@@ -1571,6 +1571,24 @@ namespace Amma.Infrastructure.Persistence.Migrations
                     b.ToTable("UserConsents");
                 });
 
+            modelBuilder.Entity("Amma.Infrastructure.Persistence.AppSecret", b =>
+                {
+                    b.Property<string>("Name")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<byte[]>("Value")
+                        .IsRequired()
+                        .HasColumnType("bytea");
+
+                    b.HasKey("Name");
+
+                    b.ToTable("AppSecrets");
+                });
+
             modelBuilder.Entity("Amma.Infrastructure.Persistence.IdempotencyRecord", b =>
                 {
                     b.Property<Guid>("UserId")

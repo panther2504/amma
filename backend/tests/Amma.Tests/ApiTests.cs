@@ -383,3 +383,50 @@ public class SharedAccountTests
         (await c.PostAsJsonAsync("/api/v1/auth/pin/login", new { destination = "9800000022", pin = "9753" })).EnsureSuccessStatusCode();
     }
 }
+
+public class AppReleaseTests
+{
+    [Fact]
+    public void Parses_version_and_apk_link_from_github_release()
+    {
+        const string json = """
+        {"body":"Built from abc1234.\nversionCode: 17\nversionName: 1.0.17","published_at":"2026-11-28T10:00:00Z",
+         "assets":[{"name":"Amma.apk","browser_download_url":"https://github.com/x/y/releases/download/android-latest/Amma.apk"}]}
+        """;
+        var r = Amma.Api.Controllers.AppReleaseController.ParseRelease(json)!;
+        Assert.Equal(17, r.VersionCode);
+        Assert.Equal("1.0.17", r.VersionName);
+        Assert.EndsWith("/Amma.apk", r.DownloadUrl);
+        Assert.Equal("Built from abc1234.", r.Notes);
+    }
+
+    [Fact]
+    public void Release_without_version_is_ignored() =>
+        Assert.Null(Amma.Api.Controllers.AppReleaseController.ParseRelease("""{"body":"old build","assets":[]}"""));
+
+    [Fact]
+    public async Task Signing_key_requires_a_valid_github_token()
+    {
+        await using var f = new AmmaFactory().WithWebHostBuilder(b =>
+        {
+            b.UseSetting("AppRelease:KeystoreBase64", "a2V5c3RvcmU=");
+            b.UseSetting("AppRelease:KeystorePassword", "pw");
+        });
+        var c = f.CreateClient();
+        Assert.Equal(HttpStatusCode.Unauthorized, (await c.PostAsync("/api/v1/ci/android-signing-key", null)).StatusCode);
+        var forged = new HttpRequestMessage(HttpMethod.Post, "/api/v1/ci/android-signing-key");
+        forged.Headers.Authorization = new AuthenticationHeaderValue("Bearer", "eyJhbGciOiJSUzI1NiJ9.eyJyZXBvc2l0b3J5IjoicGFudGhlcjI1MDQvYW1tYSJ9.c2ln");
+        var res = await c.SendAsync(forged);
+        Assert.True(res.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.InternalServerError, $"forged token got {res.StatusCode}");
+        Assert.DoesNotContain("a2V5c3RvcmU=", await res.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task Refused_callers_never_cause_a_key_to_be_created()
+    {
+        await using var f = new AmmaFactory();
+        Assert.Equal(HttpStatusCode.Unauthorized, (await f.CreateClient().PostAsync("/api/v1/ci/android-signing-key", null)).StatusCode);
+        using var scope = f.Services.CreateScope();
+        Assert.Empty(scope.ServiceProvider.GetRequiredService<Amma.Infrastructure.Persistence.AmmaDbContext>().AppSecrets);
+    }
+}
